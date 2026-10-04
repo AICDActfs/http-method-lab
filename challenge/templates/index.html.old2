@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICDA — HTTP Methods CTF Challenge</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+  header{background:#161b22;border-bottom:1px solid #30363d;padding:1rem 2rem;display:flex;align-items:center;gap:1.5rem;position:sticky;top:0;z-index:10}
+  header img{height:44px;width:auto}
+  header h1{font-size:1.25rem;color:#f0f6fc;flex:1}
+  .badge{padding:.25rem .7rem;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.5px;background:#da3633;color:#fff}
+  .score-header{display:flex;align-items:center;gap:1rem;font-family:monospace;font-size:.85rem}
+  .score-header .count{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:.35rem .8rem;color:#f0f6fc}
+  .score-header .count b{color:#3fb950;font-size:1rem}
+  main{max-width:1300px;margin:2rem auto;padding:0 1.5rem;flex:1;width:100%;display:grid;grid-template-columns:1.2fr 1fr;gap:1.4rem}
+  .full{grid-column:1 / -1}
+  .card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:1.5rem}
+  .card h2{color:#58a6ff;margin-bottom:.8rem;font-size:1.1rem;display:flex;align-items:center;gap:.6rem}
+  .card h3{color:#d29922;margin:1rem 0 .5rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+  p{color:#8b949e;margin-bottom:.55rem;font-size:.9rem}
+  code{background:#0d1117;padding:.15rem .4rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.83rem;color:#79c0ff}
+  pre{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:.9rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#c9d1d9;margin:.5rem 0;line-height:1.55}
+  .method-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.5rem;margin-top:.6rem}
+  button{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:.5rem .7rem;border-radius:6px;font-family:monospace;font-weight:700;font-size:.8rem;cursor:pointer;transition:all .12s}
+  button:hover{background:#30363d;border-color:#58a6ff}
+  button.m-GET{color:#58a6ff}button.m-POST{color:#3fb950}
+  button.m-PUT{color:#d29922}button.m-PATCH{color:#bc8cff}
+  button.m-DELETE{color:#f85149}button.m-HEAD{color:#79c0ff}
+  button.m-OPTIONS{color:#8b949e}button.m-TRACE{color:#ff7b72}
+  button.fire{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  button.fire:hover{background:#388bfd}
+  button.hint-btn{background:#d2992222;border-color:#d29922;color:#d29922;font-family:'Segoe UI',sans-serif;font-size:.75rem;padding:.3rem .6rem}
+  button.hint-btn:hover{background:#d2992244}
+  input,select,textarea{background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:.45rem .6rem;border-radius:6px;font-family:monospace;font-size:.83rem;width:100%}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#58a6ff}
+  .row{display:grid;grid-template-columns:120px 1fr;gap:.6rem;margin-bottom:.5rem;align-items:center}
+  .log{max-height:300px;overflow-y:auto;background:#0d1117;border:1px solid #21262d;border-radius:8px;font-family:monospace;font-size:.75rem;padding:.6rem}
+  .log-entry{padding:.35rem .3rem;border-bottom:1px solid #21262d}
+  .log-entry:last-child{border-bottom:none}
+  .log-method{font-weight:700;margin-right:.4rem}
+  .log-time{color:#484f58;margin-right:.5rem}
+  .log-path{color:#8b949e}
+  .m-GET{color:#58a6ff}.m-POST{color:#3fb950}.m-PUT{color:#d29922}
+  .m-PATCH{color:#bc8cff}.m-DELETE{color:#f85149}.m-HEAD{color:#79c0ff}
+  .m-OPTIONS{color:#8b949e}.m-TRACE{color:#ff7b72}
+  .out{margin-top:.6rem;background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:.7rem;font-family:monospace;font-size:.78rem;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#c9d1d9}
+  .out.ok{border-color:#3fb950}
+  .out.err{border-color:#f85149}
+  .endpoint{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:.9rem;margin-bottom:.8rem}
+  .endpoint h4{color:#f0f6fc;font-family:monospace;font-size:.9rem;margin-bottom:.4rem}
+  .endpoint .path{color:#79c0ff}
+  .endpoint .desc{font-size:.83rem;color:#8b949e;margin-bottom:.5rem}
+  .badge-sm{display:inline-block;background:#30363d;color:#8b949e;padding:.1rem .5rem;border-radius:10px;font-size:.68rem;margin-left:.4rem;font-weight:400}
+  footer{text-align:center;padding:1.4rem;color:#484f58;font-size:.82rem;border-top:1px solid #21262d}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .flag-brief{background:#1f6feb15;border:1px solid #1f6feb55;border-radius:8px;padding:1rem;margin:1rem 0;font-family:monospace;font-size:.85rem;color:#79c0ff}
+  .flag-brief b{color:#3fb950}
+  .scoreboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.6rem;margin-top:.6rem}
+  .flag-slot{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:.7rem;font-family:monospace;font-size:.78rem}
+  .flag-slot .label{color:#8b949e;display:block;margin-bottom:.3rem;font-size:.72rem}
+  .flag-slot .value{color:#484f58;font-size:.72rem;word-break:break-all;line-height:1.4}
+  .flag-slot.captured{border-color:#3fb950;background:#3fb95010}
+  .flag-slot.captured .value{color:#3fb950}
+  .flag-slot .checkmark{float:right;color:#3fb950;font-size:.9rem}
+  .submit-row{display:flex;gap:.6rem;margin-top:.6rem}
+  .submit-row input{flex:1}
+  .submit-row button{background:#1f6feb;border-color:#1f6feb;color:#fff;padding:.6rem 1rem;font-family:'Segoe UI',sans-serif;font-weight:600}
+  .submit-row button:hover{background:#388bfd}
+  .submit-feedback{margin-top:.6rem;padding:.7rem 1rem;border-radius:8px;font-family:monospace;font-size:.83rem;display:none}
+  .submit-feedback.good{display:block;background:#3fb95015;border:1px solid #3fb950;color:#3fb950}
+  .submit-feedback.bad{display:block;background:#f8514915;border:1px solid #f85149;color:#f85149}
+  .hint-box{display:none;margin-top:.5rem;padding:.6rem .8rem;background:#d2992215;border-left:3px solid #d29922;border-radius:0 6px 6px 0;font-size:.83rem;color:#d29922}
+  .hint-box.show{display:block}
+  @media (max-width:900px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <img src="/static/images/logo.png" alt="AICDA">
+  <h1>AICDA — HTTP Methods CTF</h1>
+  <div class="score-header">
+    <span class="count">Captured: <b id="score">0</b> / 6</span>
+  </div>
+  <span class="badge">LIVE</span>
+</header>
+
+<main>
+
+<!-- ============ MISSION BRIEFING ============ -->
+<div class="card full">
+  <h2>🎯 Mission Briefing</h2>
+  <p>Six flags are hidden across three endpoints. Each flag is recoverable by abusing the <strong>HTTP method handling</strong> you studied in the tutorial lab. No authentication is required. No source code is provided.</p>
+
+  <div class="flag-brief">
+    <b>Flag format:</b> AICDA{...}<br>
+    <b>Total:</b> 6 flags<br>
+    <b>Points:</b> each flag is worth 1 point — but F6 is the hardest<br>
+    <b>Tools allowed:</b> curl, Burp Suite, browser dev tools, your brain
+  </div>
+
+  <h3>What to do</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>Probe each endpoint. Try all eight methods.</li>
+    <li>Read the response bodies <em>and</em> the response headers.</li>
+    <li>When you find something that looks like <code>AICDA{...}</code>, paste it into the flag submission box below.</li>
+    <li>The scoreboard lights up green for each flag you've captured.</li>
+    <li>Stuck? Each endpoint has a <strong>Hint</strong> button that reveals one nudge at a time. Don't click it until you've actually tried.</li>
+  </ol>
+</div>
+
+<!-- ============ TARGETS ============ -->
+<div class="card">
+  <h2>🗺️ Targets</h2>
+  <p>Three endpoints. Two flags live on the first, one on the second, two on the third, and one is a bonus for the persistent.</p>
+
+  <div class="endpoint">
+    <h4><span class="path">/vault</span><span class="badge-sm">2 flags</span></h4>
+    <p class="desc">A vault locked behind a flawed policy. Only one method is blocked — but which one?</p>
+    <div class="method-grid">
+      <button class="m-GET"     onclick="fire('/vault','GET')">GET</button>
+      <button class="m-POST"    onclick="fire('/vault','POST')">POST</button>
+      <button class="m-PUT"     onclick="fire('/vault','PUT')">PUT</button>
+      <button class="m-PATCH"   onclick="fire('/vault','PATCH')">PATCH</button>
+      <button class="m-DELETE"  onclick="fire('/vault','DELETE')">DELETE</button>
+      <button class="m-HEAD"    onclick="fire('/vault','HEAD')">HEAD</button>
+      <button class="m-OPTIONS" onclick="fire('/vault','OPTIONS')">OPTIONS</button>
+      <button class="m-TRACE"   onclick="fire('/vault','TRACE')">TRACE</button>
+    </div>
+    <button class="hint-btn" onclick="toggleHint('hint-vault')">💡 Show hint</button>
+    <div class="hint-box" id="hint-vault">
+      The GET method is denied by policy. Every other method reaches the handler. One of them leaks data in a response header instead of the body — you won't see it in a browser, only in curl <code>-I</code> or Burp.
+    </div>
+    <div class="out" id="out-vault">Response will appear here after you click a button.</div>
+  </div>
+
+  <div class="endpoint">
+    <h4><span class="path">/vault/backup</span><span class="badge-sm">2 flags</span></h4>
+    <p class="desc">A backup write path. Endpoint name is not advertised — <em>you have to find it</em>. Two flags are in here.</p>
+    <div class="method-grid">
+      <button class="m-GET"     onclick="fire('/vault/backup','GET')">GET</button>
+      <button class="m-PUT"     onclick="fire('/vault/backup','PUT')">PUT</button>
+      <button class="m-PATCH"   onclick="fire('/vault/backup','PATCH')">PATCH</button>
+      <button class="m-DELETE"  onclick="fire('/vault/backup','DELETE')">DELETE</button>
+      <button class="m-HEAD"    onclick="fire('/vault/backup','HEAD')">HEAD</button>
+      <button class="m-OPTIONS" onclick="fire('/vault/backup','OPTIONS')">OPTIONS</button>
+    </div>
+    <button class="hint-btn" onclick="toggleHint('hint-backup')">💡 Show hint</button>
+    <div class="hint-box" id="hint-backup">
+      How would you know this endpoint exists without guessing? Look at the response headers of <code>OPTIONS /vault</code>. One of the custom <code>X-*</code> headers names this path. Then PUT a body to it — no auth required.
+    </div>
+    <div class="out" id="out-vault-backup">Response will appear here after you click a button.</div>
+  </div>
+
+  <div class="endpoint">
+    <h4><span class="path">/api/secret</span><span class="badge-sm">2 flags</span></h4>
+    <p class="desc">An API endpoint that blocks DELETE. But some clients lie about their method — do you know how?</p>
+    <div class="method-grid">
+      <button class="m-GET"     onclick="fire('/api/secret','GET')">GET</button>
+      <button class="m-POST"    onclick="fire('/api/secret','POST')">POST</button>
+      <button class="m-DELETE"  onclick="fire('/api/secret','DELETE')">DELETE</button>
+      <button class="m-OPTIONS" onclick="fire('/api/secret','OPTIONS')">OPTIONS</button>
+    </div>
+    <div class="method-grid" style="margin-top:.4rem">
+      <button class="fire" style="grid-column:1/-1" onclick="fireOverride()">
+        POST + X-HTTP-Method-Override: DELETE
+      </button>
+    </div>
+    <button class="hint-btn" onclick="toggleHint('hint-secret')">💡 Show hint</button>
+    <div class="hint-box" id="hint-secret">
+      Some servers let clients override the method using the <code>X-HTTP-Method-Override</code> header. The filter checks <code>request.method</code> (POST) — but the handler respects the override (DELETE). Two flags: one from the override bypass, one from a well-crafted OPTIONS request that reveals the endpoint's own secrets.
+    </div>
+    <div class="out" id="out-api-secret">Response will appear here after you click a button.</div>
+  </div>
+</div>
+
+<!-- ============ SCOREBOARD + SUBMIT + LOG + CONSOLE ============ -->
+<div>
+  <div class="card" style="margin-bottom:1.4rem">
+    <h2>🏆 Scoreboard</h2>
+    <p style="font-size:.83rem">Paste any flag you discover into the box below. The score updates instantly.</p>
+    <div class="scoreboard" id="scoreboard">
+      <div class="flag-slot" data-flag="F1"><span class="label">F1 — method bypass</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F2"><span class="label">F2 — header leak on HEAD</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F3"><span class="label">F3 — OPTIONS recon</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F4"><span class="label">F4 — TRACE echo</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F5"><span class="label">F5 — backup PUT</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F6"><span class="label">F6 — override header</span><span class="value">not captured</span></div>
+    </div>
+
+    <h3>Submit a flag</h3>
+    <div class="submit-row">
+      <input id="flag-input" placeholder="AICDA{...}" autocomplete="off" spellcheck="false">
+      <button onclick="submitFlag()">Submit</button>
+    </div>
+    <div class="submit-feedback" id="flag-feedback"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.4rem">
+    <h2>📡 Your Requests
+      <button style="float:right;font-size:.72rem;padding:.25rem .6rem" onclick="loadLog()">Refresh</button>
+    </h2>
+    <p style="font-size:.83rem">Every request you've fired is listed below. Updates only when you click Refresh.</p>
+    <div class="log" id="log">No requests yet.</div>
+  </div>
+
+  <div class="card">
+    <h2>🛠️ Manual Console</h2>
+    <p style="font-size:.83rem">Want full control? Use curl or Burp. This console is for quick tests without leaving the page.</p>
+    <div class="row"><label>Method</label>
+      <select id="c-method">
+        <option>GET</option><option>POST</option><option>PUT</option>
+        <option>PATCH</option><option>DELETE</option><option>HEAD</option>
+        <option>OPTIONS</option><option>TRACE</option>
+      </select>
+    </div>
+    <div class="row"><label>Path</label>
+      <input id="c-path" value="/vault" />
+    </div>
+    <div class="row"><label>Override</label>
+      <input id="c-override" placeholder="X-HTTP-Method-Override value (optional)" />
+    </div>
+    <div class="row"><label>Body</label>
+      <textarea id="c-body" rows="2" placeholder="raw body (optional)"></textarea>
+    </div>
+    <button class="fire" style="width:100%;margin-top:.4rem" onclick="fireCustom()">Send</button>
+    <div class="out" id="out-custom">Ready.</div>
+  </div>
+</div>
+
+<!-- ============ METHODOLOGY ============ -->
+<div class="card full">
+  <h2>🧭 Recon Methodology</h2>
+  <div class="two">
+    <div>
+      <h3>Step 1 — Ask first</h3>
+      <p>Before fuzzing, run OPTIONS against every endpoint. It returns an <code>Allow</code> header listing supported methods. Sometimes it also leaks custom <code>X-*</code> headers that hint at other endpoints.</p>
+      <pre>curl -i -X OPTIONS http://192.168.10.7:5001/vault</pre>
+      <h3>Step 2 — Enumerate methods</h3>
+      <p>Send every method against the same path and compare status codes. Anything that isn't a 401, 403, 404, or 405 is worth reading.</p>
+      <pre>for m in GET POST PUT PATCH DELETE HEAD OPTIONS TRACE; do
+  echo "--- $m ---"
+  curl -s -o /dev/null -w "%{http_code}\n" -X $m http://192.168.10.7:5001/vault
+done</pre>
+    </div>
+    <div>
+      <h3>Step 3 — Read the headers</h3>
+      <p>HEAD responses carry headers even when the body is stripped. Flags are hidden in <code>X-Flag</code>, <code>X-Backup-*</code>, and similar custom headers.</p>
+      <pre>curl -I http://192.168.10.7:5001/vault</pre>
+      <h3>Step 4 — Look for override headers</h3>
+      <p>Some servers accept a header that changes the effective method. Try <code>X-HTTP-Method-Override: DELETE</code> on a POST request.</p>
+      <pre>curl -X POST http://192.168.10.7:5001/api/secret \
+  -H "X-HTTP-Method-Override: DELETE"</pre>
+      <h3>Step 5 — Use Burp Intruder</h3>
+      <p>Send any request to Intruder. Put <code>§</code> around the method, load a payload list of all eight methods, start the attack, sort by status code.</p>
+    </div>
+  </div>
+</div>
+
+</main>
+<footer>AICDA — Advanced Institute for Cyber Defense &amp; Analytics</footer>
+
+<script>
+// =================== FLAG VALIDATION ===================
+// Hashes of the flags — the plaintext is not in this file.
+// The server does the real comparison; this is a UX nicety.
+const FLAG_PATTERN = /^AICDA\{[A-Z0-9_]+\}$/;
+
+async function submitFlag() {
+  const input = document.getElementById('flag-input');
+  const fb = document.getElementById('flag-feedback');
+  const val = input.value.trim();
+  fb.className = 'submit-feedback';
+  fb.textContent = '';
+  if (!FLAG_PATTERN.test(val)) {
+    fb.className = 'submit-feedback bad';
+    fb.textContent = 'That does not look like a flag. Format: AICDA{...}';
+    return;
+  }
+  try {
+    const r = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flag: val }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      fb.className = 'submit-feedback good';
+      fb.textContent = '✓ Correct! ' + data.flag_id + ' captured. Score: ' + data.score + '/6';
+      markCaptured(data.flag_id, val);
+      input.value = '';
+    } else {
+      fb.className = 'submit-feedback bad';
+      fb.textContent = '✗ Not a valid flag. Keep looking.';
+    }
+  } catch (e) {
+    fb.className = 'submit-feedback bad';
+    fb.textContent = 'Error contacting server: ' + e.message;
+  }
+}
+
+function markCaptured(flagId, val) {
+  const slot = document.querySelector('[data-flag="' + flagId + '"]');
+  if (slot) {
+    slot.classList.add('captured');
+    slot.querySelector('.value').textContent = val;
+    if (!slot.querySelector('.checkmark')) {
+      const cm = document.createElement('span');
+      cm.className = 'checkmark';
+      cm.textContent = '✓';
+      slot.querySelector('.label').appendChild(cm);
+    }
+  }
+  localStorage.setItem('aicda-flag-' + flagId, val);
+  updateScore();
+}
+
+function updateScore() {
+  const n = document.querySelectorAll('.flag-slot.captured').length;
+  document.getElementById('score').textContent = n;
+}
+
+// Restore progress from previous session
+function restoreProgress() {
+  ['F1','F2','F3','F4','F5','F6'].forEach(id => {
+    const v = localStorage.getItem('aicda-flag-' + id);
+    if (v) markCaptured(id, v);
+  });
+  updateScore();
+}
+restoreProgress();
+
+// =================== HINTS ===================
+function toggleHint(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('show');
+}
+
+// =================== FIRE (single deliberate request) ===================
+async function fire(path, method) {
+  const out = document.getElementById('out-' + slug(path));
+  if (out) { out.textContent = 'Sending ' + method + ' ' + path + '…'; out.className = 'out'; }
+  try {
+    const r = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: ['POST','PUT','PATCH'].includes(method) ? '{}' : undefined,
+    });
+    const text = await r.text();
+    const headers = {};
+    r.headers.forEach((v,k) => headers[k] = v);
+    if (out) {
+      out.textContent = JSON.stringify({
+        status: r.status,
+        statusText: r.statusText,
+        response_headers: headers,
+        body: tryJson(text),
+      }, null, 2);
+      out.className = 'out ' + (r.ok ? 'ok' : 'err');
+    }
+  } catch (e) {
+    if (out) { out.textContent = 'Error: ' + e.message; out.className = 'out err'; }
+  }
+}
+
+async function fireOverride() {
+  const out = document.getElementById('out-api-secret');
+  out.textContent = 'Sending POST with X-HTTP-Method-Override: DELETE…';
+  out.className = 'out';
+  try {
+    const r = await fetch('/api/secret', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-HTTP-Method-Override': 'DELETE',
+      },
+      body: '{}',
+    });
+    const text = await r.text();
+    const headers = {};
+    r.headers.forEach((v,k) => headers[k] = v);
+    out.textContent = JSON.stringify({
+      status: r.status,
+      response_headers: headers,
+      body: tryJson(text),
+    }, null, 2);
+    out.className = 'out ' + (r.ok ? 'ok' : 'err');
+  } catch (e) {
+    out.textContent = 'Error: ' + e.message;
+    out.className = 'out err';
+  }
+}
+
+async function fireCustom() {
+  const method = document.getElementById('c-method').value;
+  const path = document.getElementById('c-path').value;
+  const override = document.getElementById('c-override').value;
+  const body = document.getElementById('c-body').value;
+  const out = document.getElementById('out-custom');
+  out.textContent = 'Sending ' + method + ' ' + path + '…';
+  out.className = 'out';
+
+  const headers = {};
+  if (override) headers['X-HTTP-Method-Override'] = override;
+  if (body) headers['Content-Type'] = 'application/json';
+
+  try {
+    const r = await fetch(path, { method, headers, body: body || undefined });
+    const text = await r.text();
+    const respHeaders = {};
+    r.headers.forEach((v,k) => respHeaders[k] = v);
+    out.textContent = JSON.stringify({
+      request: { method, path, headers, body },
+      response: { status: r.status, headers: respHeaders, body: tryJson(text) }
+    }, null, 2);
+    out.className = 'out ' + (r.ok ? 'ok' : 'err');
+  } catch (e) {
+    out.textContent = 'Error: ' + e.message;
+    out.className = 'out err';
+  }
+}
+
+// =================== LOG (manual refresh only) ===================
+async function loadLog() {
+  try {
+    const r = await fetch('/api/log');
+    const entries = await r.json();
+    const log = document.getElementById('log');
+    if (!entries.length) { log.textContent = 'No requests yet.'; return; }
+    log.innerHTML = entries.map(e =>
+      '<div class="log-entry">'
+      + '<span class="log-time">' + e.time + '</span>'
+      + '<span class="log-method m-' + e.method + '">' + e.method + '</span>'
+      + '<span class="log-path">' + e.path + (e.query ? '?' + e.query : '') + '</span>'
+      + (e.note ? '<span class="log-note">(' + e.note + ')</span>' : '')
+      + '</div>'
+    ).join('');
+  } catch (err) { /* silent */ }
+}
+
+function tryJson(t) { try { return JSON.parse(t); } catch { return t; } }
+function slug(p) { return p.replace(/^\//,'').replace(/\//g,'-'); }
+
+// Allow Enter key to submit flag
+document.getElementById('flag-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitFlag();
+});
+</script>
+</body>
+</html>

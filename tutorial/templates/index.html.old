@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICDA — HTTP Methods Tutorial Lab</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;display:flex;flex-direction:column}
+  header{background:#161b22;border-bottom:1px solid #30363d;padding:1rem 2rem;display:flex;align-items:center;gap:1.5rem}
+  header img{height:44px;width:auto}
+  header h1{font-size:1.3rem;color:#f0f6fc;flex:1}
+  .badge{padding:.25rem .7rem;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.5px}
+  .badge.teach{background:#1f6feb;color:#fff}
+  main{max-width:1150px;margin:2rem auto;padding:0 1.5rem;flex:1;width:100%}
+  .card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:1.6rem;margin-bottom:1.4rem}
+  .card h2{color:#58a6ff;margin-bottom:.8rem;font-size:1.15rem}
+  .card h3{color:#d29922;margin:1.2rem 0 .5rem;font-size:.85rem;text-transform:uppercase;letter-spacing:.5px}
+  p{line-height:1.7;color:#8b949e;margin-bottom:.6rem}
+  code{background:#0d1117;padding:.15rem .4rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.87rem;color:#79c0ff}
+  pre{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:1rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#c9d1d9;margin:.5rem 0;line-height:1.5}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.7rem;margin-top:.6rem}
+  .chip{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:.7rem;text-align:center;font-family:monospace;font-weight:700;cursor:pointer;transition:border-color .15s}
+  .chip:hover{border-color:#58a6ff}
+  .chip small{display:block;font-weight:400;font-size:.68rem;color:#8b949e;margin-top:.25rem;letter-spacing:0;text-transform:none}
+  .m-get{color:#58a6ff}.m-post{color:#3fb950}.m-put{color:#d29922}
+  .m-patch{color:#bc8cff}.m-delete{color:#f85149}.m-head{color:#79c0ff}
+  .m-options{color:#8b949e}.m-trace{color:#ff7b72}.m-connect{color:#ffa657}
+  table{width:100%;border-collapse:collapse;margin-top:.6rem;font-size:.88rem}
+  th,td{text-align:left;padding:.5rem .6rem;border-bottom:1px solid #30363d}
+  th{color:#8b949e;font-size:.75rem;text-transform:uppercase;letter-spacing:.5px}
+  .yes{color:#3fb950}.no{color:#f85149}
+  footer{text-align:center;padding:1.4rem;color:#484f58;font-size:.82rem;border-top:1px solid #21262d}
+</style>
+</head>
+<body>
+<header>
+  <img src="/static/images/logo.png" alt="AICDA">
+  <h1>AICDA — HTTP Methods Tutorial Lab</h1>
+  <span class="badge teach">GUIDED</span>
+</header>
+<main>
+
+<div class="card">
+  <h2>📘 What is this lab?</h2>
+  <p>This is your <strong>learning sandbox</strong>. Every HTTP method has a live endpoint here. Use the commands and Burp workflow to observe <em>exactly</em> how each method reaches the server, what it carries, and what it returns.</p>
+  <p>When you're comfortable, move to the <strong>Challenge Lab</strong> at <code>http://192.168.10.7:5001</code> — same methods, no explanations, flags to find.</p>
+</div>
+
+<div class="card">
+  <h2>🧭 The Methods</h2>
+  <p>Click any method to see its definition, purpose, and attack surface.</p>
+  <div class="grid" id="chip-grid"></div>
+  <div id="method-detail" style="margin-top:1rem;"></div>
+</div>
+
+<div class="card">
+  <h2>📊 Comparison Matrix</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Safe</th><th>Idempotent</th><th>Has Body</th></tr></thead>
+    <tbody id="matrix"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>🧪 Live Demo Endpoints</h2>
+  <p>Each endpoint echoes back what the server received — proof that your method landed.</p>
+  <table>
+    <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>/demo/get</code></td><td>GET</td><td>Echoes query params &amp; interesting headers</td></tr>
+      <tr><td><code>/demo/post</code></td><td>POST</td><td>Echoes form data, JSON, raw body</td></tr>
+      <tr><td><code>/demo/put</code></td><td>PUT</td><td>Echoes raw body (full replace semantics)</td></tr>
+      <tr><td><code>/demo/patch</code></td><td>PATCH</td><td>Echoes raw body (partial update semantics)</td></tr>
+      <tr><td><code>/demo/delete</code></td><td>DELETE</td><td>Simulated deletion</td></tr>
+      <tr><td><code>/demo/head</code></td><td>HEAD</td><td>Headers only — check the <code>X-*</code> response headers</td></tr>
+      <tr><td><code>/demo/options</code></td><td>OPTIONS</td><td>Returns <code>Allow</code> header</td></tr>
+      <tr><td><code>/demo/trace</code></td><td>TRACE</td><td>Echoes the entire request back</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>⚠️ Vulnerable Endpoint — Learn the Bypass Here</h2>
+  <p><code>/vuln/admin</code> is <em>intentionally flawed</em>: only <code>GET</code> is blocked. Every other method reaches the admin action. Study the bypass in this sandbox, then repeat it in the Challenge Lab on a different path.</p>
+  <pre># Blocked
+curl -i http://192.168.10.7:5000/vuln/admin
+
+# Bypass with POST
+curl -i -X POST http://192.168.10.7:5000/vuln/admin
+
+# Bypass with HEAD — look at the X-Admin-Secret header
+curl -I http://192.168.10.7:5000/vuln/admin</pre>
+</div>
+
+<div class="card">
+  <h2>🔧 Burp Suite Workflow</h2>
+  <h3>1. Point Burp at the lab</h3>
+  <p>Proxy → Options → ensure <code>127.0.0.1:8080</code> is listening. Configure Firefox to use it (FoxyProxy or manual). Or use Burp's embedded browser.</p>
+  <h3>2. Intercept a request</h3>
+  <p>Visit <code>http://192.168.10.7:5000/demo/get?name=alice</code>. In Proxy → Intercept, click <em>Intercept is on</em>. Reload. You'll see the raw GET line.</p>
+  <h3>3. Change the method in Repeater</h3>
+  <p>Right-click the request → <em>Send to Repeater</em>. In Repeater, edit the first line:</p>
+  <pre>GET /vuln/admin HTTP/1.1
+→
+POST /vuln/admin HTTP/1.1</pre>
+  <p>Add <code>Content-Length: 0</code> if the body is empty. Click <em>Send</em>. Observe the 401 become a 200 with a flag.</p>
+  <h3>4. Fuzz methods with Intruder</h3>
+  <p>Send the same request to Intruder. Set the payload position on the method itself:</p>
+  <pre>§GET§ /vuln/admin HTTP/1.1</pre>
+  <p>Payloads: <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code>, <code>DELETE</code>, <code>HEAD</code>, <code>OPTIONS</code>, <code>TRACE</code>. Start attack. Sort by status code — anything not 401 is a bypass.</p>
+  <h3>5. Inspect HEAD responses</h3>
+  <p>Burp shows HEAD response headers even when the body is empty. Look for <code>X-Admin-Secret</code> — invisible in a browser.</p>
+</div>
+
+</main>
+<footer>AICDA — Advanced Institute for Cyber Defense &amp; Analytics</footer>
+<script>
+const METHOD_INFO = {
+  GET: { purpose: "Retrieve a representation of the resource.", safe: true, idempotent: true, body: "No",
+         typical_use: "Loading pages, fetching data, filtering via query string.",
+         attack_surface: "Query strings logged in access logs, browser history, Referer. Never put secrets in ?key=value." },
+  POST: { purpose: "Submit data to be processed.", safe: false, idempotent: false, body: "Yes",
+          typical_use: "Login forms, file uploads, creating records.",
+          attack_surface: "Assumed CSRF-protected. Often overlooked when devs only guard GET." },
+  PUT: { purpose: "Replace the entire resource at the URI.", safe: false, idempotent: true, body: "Yes",
+         typical_use: "Upload file to known URI, full record replace.",
+         attack_surface: "Missing auth on PUT = overwrite anyone's data." },
+  PATCH: { purpose: "Apply partial modifications to a resource.", safe: false, idempotent: false, body: "Yes",
+           typical_use: "Update one field, toggle a flag.",
+           attack_surface: "Mass assignment — sending fields the dev forgot to whitelist." },
+  DELETE: { purpose: "Remove the resource.", safe: false, idempotent: true, body: "Rarely",
+            typical_use: "Delete records, revoke tokens.",
+            attack_surface: "Often excluded from CSRF protection. Cookies alone can trigger it." },
+  HEAD: { purpose: "Identical to GET but no response body.", safe: true, idempotent: true, body: "No",
+          typical_use: "Metadata checks, link validators, CDN freshness.",
+          attack_surface: "Handler runs, body stripped. Leaks only via headers. Auth checks that test == 'GET' miss it." },
+  OPTIONS: { purpose: "Report which methods the target supports.", safe: true, idempotent: true, body: "No",
+             typical_use: "CORS preflight, API discovery.",
+             attack_surface: "Unauthenticated recon — reveals attack surface." },
+  TRACE: { purpose: "Echo the received request back to the client.", safe: true, idempotent: true, body: "Echo",
+           typical_use: "Debugging proxy chains. Should be disabled.",
+           attack_surface: "Cross-Site Tracing (XST) — steals HttpOnly cookies via XSS." },
+  CONNECT: { purpose: "Establish a TCP tunnel to another host.", safe: false, idempotent: false, body: "No",
+             typical_use: "HTTPS through an HTTP proxy.",
+             attack_surface: "Open CONNECT relays enable proxy pivoting." },
+};
+
+function renderMethods() {
+  const grid = document.getElementById('chip-grid');
+  const matrix = document.getElementById('matrix');
+  for (const [m, d] of Object.entries(METHOD_INFO)) {
+    const chip = document.createElement('div');
+    chip.className = 'chip m-' + m.toLowerCase();
+    chip.innerHTML = m + '<small>' + d.purpose.split('.')[0] + '</small>';
+    chip.onclick = () => show(m, d);
+    grid.appendChild(chip);
+
+    const row = matrix.insertRow();
+    row.innerHTML = '<td class="m-' + m.toLowerCase() + '"><strong>' + m + '</strong></td>'
+                  + '<td class="' + (d.safe?'yes':'no') + '">' + (d.safe?'✔':'✘') + '</td>'
+                  + '<td class="' + (d.idempotent?'yes':'no') + '">' + (d.idempotent?'✔':'✘') + '</td>'
+                  + '<td>' + d.body + '</td>';
+  }
+}
+
+function show(m, d) {
+  document.getElementById('method-detail').innerHTML =
+    '<h3>' + m + '</h3>'
+    + '<p><strong>Purpose:</strong> ' + d.purpose + '</p>'
+    + '<p><strong>Typical use:</strong> ' + d.typical_use + '</p>'
+    + '<p><strong>Attack surface:</strong> ' + d.attack_surface + '</p>'
+    + '<p><strong>Safe:</strong> ' + (d.safe?'Yes':'No')
+    + ' &nbsp;|&nbsp; <strong>Idempotent:</strong> ' + (d.idempotent?'Yes':'No')
+    + ' &nbsp;|&nbsp; <strong>Has body:</strong> ' + d.body + '</p>';
+}
+
+renderMethods();
+</script>
+</body>
+</html>

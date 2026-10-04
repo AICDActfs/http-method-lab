@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICDA — HTTP Methods Challenge Lab</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;display:flex;flex-direction:column}
+  header{background:#161b22;border-bottom:1px solid #30363d;padding:1rem 2rem;display:flex;align-items:center;gap:1.5rem}
+  header img{height:44px;width:auto}
+  header h1{font-size:1.3rem;color:#f0f6fc;flex:1}
+  .badge{padding:.25rem .7rem;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.5px;background:#da3633;color:#fff}
+  main{max-width:1300px;margin:2rem auto;padding:0 1.5rem;flex:1;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
+  .full{grid-column:1 / -1}
+  .card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:1.5rem}
+  .card h2{color:#58a6ff;margin-bottom:.8rem;font-size:1.1rem}
+  .card h3{color:#d29922;margin:1rem 0 .5rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+  p{line-height:1.65;color:#8b949e;margin-bottom:.55rem;font-size:.9rem}
+  code{background:#0d1117;padding:.15rem .4rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.83rem;color:#79c0ff}
+  pre{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:.9rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#c9d1d9;margin:.5rem 0;line-height:1.5}
+  .method-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.5rem;margin-top:.6rem}
+  button{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:.5rem .7rem;border-radius:6px;font-family:monospace;font-weight:700;font-size:.8rem;cursor:pointer;transition:all .12s}
+  button:hover{background:#30363d;border-color:#58a6ff}
+  button.m-GET{color:#58a6ff}button.m-POST{color:#3fb950}
+  button.m-PUT{color:#d29922}button.m-PATCH{color:#bc8cff}
+  button.m-DELETE{color:#f85149}button.m-HEAD{color:#79c0ff}
+  button.m-OPTIONS{color:#8b949e}button.m-TRACE{color:#ff7b72}
+  button.fire{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  button.fire:hover{background:#388bfd}
+  input,select,textarea{background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:.45rem .6rem;border-radius:6px;font-family:monospace;font-size:.83rem;width:100%}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#58a6ff}
+  .row{display:grid;grid-template-columns:120px 1fr;gap:.6rem;margin-bottom:.5rem;align-items:center}
+  .log{max-height:340px;overflow-y:auto;background:#0d1117;border:1px solid #21262d;border-radius:8px;font-family:monospace;font-size:.75rem;padding:.6rem}
+  .log-entry{padding:.4rem .3rem;border-bottom:1px solid #21262d}
+  .log-entry:last-child{border-bottom:none}
+  .log-method{font-weight:700;margin-right:.4rem}
+  .log-time{color:#484f58;margin-right:.5rem}
+  .log-path{color:#8b949e}
+  .log-note{color:#d29922;font-size:.7rem}
+  .m-GET{color:#58a6ff}.m-POST{color:#3fb950}.m-PUT{color:#d29922}
+  .m-PATCH{color:#bc8cff}.m-DELETE{color:#f85149}.m-HEAD{color:#79c0ff}
+  .m-OPTIONS{color:#8b949e}.m-TRACE{color:#ff7b72}
+  .out{margin-top:.6rem;background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:.7rem;font-family:monospace;font-size:.78rem;max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#c9d1d9}
+  .out.ok{border-color:#3fb950}
+  .out.err{border-color:#f85149}
+  .endpoint{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:.9rem;margin-bottom:.8rem}
+  .endpoint h4{color:#f0f6fc;font-family:monospace;font-size:.9rem;margin-bottom:.5rem}
+  .endpoint .path{color:#79c0ff}
+  .badge-sm{display:inline-block;background:#30363d;color:#8b949e;padding:.1rem .5rem;border-radius:10px;font-size:.68rem;margin-left:.4rem;font-weight:400}
+  footer{text-align:center;padding:1.4rem;color:#484f58;font-size:.82rem;border-top:1px solid #21262d}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+</style>
+</head>
+<body>
+<header>
+  <img src="/static/images/logo.png" alt="AICDA">
+  <h1>AICDA — HTTP Methods Challenge Lab</h1>
+  <span class="badge">CTF</span>
+</header>
+<main>
+
+<div class="card">
+  <h2>🎯 Targets</h2>
+  <p>Click any method button to fire that request. Click <strong>Refresh</strong> in the log panel to see your own traffic. Every click is captured in Burp if your proxy is on.</p>
+
+  <div class="endpoint">
+    <h4><span class="path">/vault</span><span class="badge-sm">primary</span></h4>
+    <p style="font-size:.83rem;margin-bottom:.4rem">A locked vault. Policy denies one method.</p>
+    <div class="method-grid">
+      <button class="m-GET"     onclick="fire('/vault','GET')">GET</button>
+      <button class="m-POST"    onclick="fire('/vault','POST')">POST</button>
+      <button class="m-PUT"     onclick="fire('/vault','PUT')">PUT</button>
+      <button class="m-PATCH"   onclick="fire('/vault','PATCH')">PATCH</button>
+      <button class="m-DELETE"  onclick="fire('/vault','DELETE')">DELETE</button>
+      <button class="m-HEAD"    onclick="fire('/vault','HEAD')">HEAD</button>
+      <button class="m-OPTIONS" onclick="fire('/vault','OPTIONS')">OPTIONS</button>
+      <button class="m-TRACE"   onclick="fire('/vault','TRACE')">TRACE</button>
+    </div>
+    <div class="out" id="out-vault">Awaiting first request…</div>
+  </div>
+
+  <div class="endpoint">
+    <h4><span class="path">/vault/backup</span><span class="badge-sm">secondary</span></h4>
+    <p style="font-size:.83rem;margin-bottom:.4rem">Backup write path. How did you find this name?</p>
+    <div class="method-grid">
+      <button class="m-GET"     onclick="fire('/vault/backup','GET')">GET</button>
+      <button class="m-PUT"     onclick="fire('/vault/backup','PUT')">PUT</button>
+      <button class="m-PATCH"   onclick="fire('/vault/backup','PATCH')">PATCH</button>
+      <button class="m-DELETE"  onclick="fire('/vault/backup','DELETE')">DELETE</button>
+      <button class="m-HEAD"    onclick="fire('/vault/backup','HEAD')">HEAD</button>
+      <button class="m-OPTIONS" onclick="fire('/vault/backup','OPTIONS')">OPTIONS</button>
+    </div>
+    <div class="out" id="out-vault-backup">Awaiting first request…</div>
+  </div>
+
+  <div class="endpoint">
+    <h4><span class="path">/api/secret</span><span class="badge-sm">override</span></h4>
+    <p style="font-size:.83rem;margin-bottom:.4rem">DELETE is blocked — or is it?</p>
+    <div class="method-grid">
+      <button class="m-GET"     onclick="fire('/api/secret','GET')">GET</button>
+      <button class="m-POST"    onclick="fire('/api/secret','POST')">POST</button>
+      <button class="m-DELETE"  onclick="fire('/api/secret','DELETE')">DELETE</button>
+      <button class="m-OPTIONS" onclick="fire('/api/secret','OPTIONS')">OPTIONS</button>
+    </div>
+    <div class="method-grid" style="margin-top:.4rem">
+      <button class="fire" style="grid-column:1/-1" onclick="fireOverride()">
+        POST + X-HTTP-Method-Override: DELETE
+      </button>
+    </div>
+    <div class="out" id="out-api-secret">Awaiting first request…</div>
+  </div>
+</div>
+
+<div>
+  <div class="card" style="margin-bottom:1.4rem">
+    <h2>📡 Request Log
+      <button style="float:right;font-size:.72rem;padding:.25rem .6rem" onclick="loadLog()">Refresh</button>
+    </h2>
+    <p style="font-size:.83rem">Updates only when you click Refresh. No background polling.</p>
+    <div class="log" id="log">No requests yet.</div>
+  </div>
+
+  <div class="card">
+    <h2>🛠️ Console — Send Custom Requests</h2>
+    <p style="font-size:.83rem">For full control, use <code>curl</code> or Burp. This panel is for quick experiments without leaving the browser.</p>
+    <div class="row"><label>Method</label>
+      <select id="c-method">
+        <option>GET</option><option>POST</option><option>PUT</option>
+        <option>PATCH</option><option>DELETE</option><option>HEAD</option>
+        <option>OPTIONS</option><option>TRACE</option>
+      </select>
+    </div>
+    <div class="row"><label>Path</label>
+      <input id="c-path" value="/vault" />
+    </div>
+    <div class="row"><label>Override</label>
+      <input id="c-override" placeholder="X-HTTP-Method-Override value (optional)" />
+    </div>
+    <div class="row"><label>Body</label>
+      <textarea id="c-body" rows="3" placeholder="raw body (optional)"></textarea>
+    </div>
+    <button class="fire" style="width:100%;margin-top:.4rem" onclick="fireCustom()">Send</button>
+    <div class="out" id="out-custom">Ready.</div>
+  </div>
+</div>
+
+<div class="card full">
+  <h2>🔧 Capturing These Requests in Burp Suite</h2>
+  <div class="two">
+    <div>
+      <h3>1. Proxy setup</h3>
+      <p>Burp → Proxy → Options → confirm <code>127.0.0.1:8080</code> is listening. Then set Firefox to use it (FoxyProxy → "Burp" profile) or use Burp's embedded Chromium (<em>Proxy → Intercept → Open Browser</em>).</p>
+
+      <h3>2. Turn Intercept on</h3>
+      <p>Proxy → Intercept → <em>Intercept is on</em>. Now click any method button above. Burp freezes the request before it reaches the server.</p>
+
+      <h3>3. Send to Repeater</h3>
+      <p>Right-click the intercepted request → <em>Send to Repeater</em> → forward the original. In Repeater, edit the first line of the request to change the method:</p>
+      <pre>GET /vault HTTP/1.1
+→
+POST /vault HTTP/1.1</pre>
+      <p>Add <code>Content-Length: 0</code> if the body is empty. Send. Watch the response panel.</p>
+    </div>
+    <div>
+      <h3>4. Method fuzzing with Intruder</h3>
+      <p>Send the same request to Intruder. Highlight the method string → <em>Add §</em>:</p>
+      <pre>§GET§ /vault HTTP/1.1</pre>
+      <p>Payloads tab → paste:</p>
+      <pre>GET
+POST
+PUT
+PATCH
+DELETE
+HEAD
+OPTIONS
+TRACE</pre>
+      <p>Start attack. Sort by <em>Status code</em>. Anything not <code>401</code> is a bypass.</p>
+
+      <h3>5. Finding the hidden endpoint</h3>
+      <p>Send <code>OPTIONS /vault</code> in Repeater. Look at the response headers — one of them names the second endpoint. Add that path to your target list.</p>
+
+      <h3>6. HEAD header inspection</h3>
+      <p>Burp displays HEAD response headers even when the body is empty. In Repeater, switch to the <em>Headers</em> view of the response pane. Custom <code>X-*</code> headers carry flags.</p>
+
+      <h3>7. Override header testing</h3>
+      <p>In Repeater, keep the request as <code>POST /api/secret</code> and add:</p>
+      <pre>X-HTTP-Method-Override: DELETE</pre>
+      <p>Send. The server treats the effective method as DELETE even though it received POST.</p>
+    </div>
+  </div>
+</div>
+
+</main>
+<footer>AICDA — Advanced Institute for Cyber Defense &amp; Analytics</footer>
+<script>
+async function fire(path, method) {
+  const out = document.getElementById('out-' + slug(path));
+  if (out) { out.textContent = 'Sending…'; out.className = 'out'; }
+  try {
+    const r = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: ['POST','PUT','PATCH'].includes(method) ? '{}' : undefined,
+    });
+    const text = await r.text();
+    const headers = {};
+    r.headers.forEach((v,k) => headers[k] = v);
+    if (out) {
+      out.textContent = JSON.stringify({
+        status: r.status,
+        statusText: r.statusText,
+        response_headers: headers,
+        body: tryJson(text),
+      }, null, 2);
+      out.className = 'out ' + (r.ok ? 'ok' : 'err');
+    }
+  } catch (e) {
+    if (out) { out.textContent = 'Error: ' + e.message; out.className = 'out err'; }
+  }
+}
+
+async function fireOverride() {
+  const out = document.getElementById('out-api-secret');
+  out.textContent = 'Sending POST with override…';
+  out.className = 'out';
+  try {
+    const r = await fetch('/api/secret', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-HTTP-Method-Override': 'DELETE',
+      },
+      body: '{}',
+    });
+    const text = await r.text();
+    const headers = {};
+    r.headers.forEach((v,k) => headers[k] = v);
+    out.textContent = JSON.stringify({
+      status: r.status,
+      response_headers: headers,
+      body: tryJson(text),
+    }, null, 2);
+    out.className = 'out ' + (r.ok ? 'ok' : 'err');
+  } catch (e) {
+    out.textContent = 'Error: ' + e.message;
+    out.className = 'out err';
+  }
+}
+
+async function fireCustom() {
+  const method = document.getElementById('c-method').value;
+  const path = document.getElementById('c-path').value;
+  const override = document.getElementById('c-override').value;
+  const body = document.getElementById('c-body').value;
+  const out = document.getElementById('out-custom');
+  out.textContent = 'Sending ' + method + ' ' + path + '…';
+  out.className = 'out';
+
+  const headers = {};
+  if (override) headers['X-HTTP-Method-Override'] = override;
+  if (body) headers['Content-Type'] = 'application/json';
+
+  try {
+    const r = await fetch(path, { method, headers, body: body || undefined });
+    const text = await r.text();
+    const respHeaders = {};
+    r.headers.forEach((v,k) => respHeaders[k] = v);
+    out.textContent = JSON.stringify({
+      request: { method, path, headers, body },
+      response: { status: r.status, headers: respHeaders, body: tryJson(text) }
+    }, null, 2);
+    out.className = 'out ' + (r.ok ? 'ok' : 'err');
+  } catch (e) {
+    out.textContent = 'Error: ' + e.message;
+    out.className = 'out err';
+  }
+}
+
+async function loadLog() {
+  try {
+    const r = await fetch('/api/log');
+    const entries = await r.json();
+    const log = document.getElementById('log');
+    if (!entries.length) { log.textContent = 'No requests yet.'; return; }
+    log.innerHTML = entries.map(e =>
+      '<div class="log-entry">'
+      + '<span class="log-time">' + e.time + '</span>'
+      + '<span class="log-method m-' + e.method + '">' + e.method + '</span>'
+      + '<span class="log-path">' + e.path + (e.query ? '?' + e.query : '') + '</span>'
+      + (e.note ? '<span class="log-note">(' + e.note + ')</span>' : '')
+      + '</div>'
+    ).join('');
+  } catch (err) { /* silent */ }
+}
+
+function tryJson(t) { try { return JSON.parse(t); } catch { return t; } }
+function slug(p) { return p.replace(/^\//,'').replace(/\//g,'-'); }
+</script>
+</body>
+</html>

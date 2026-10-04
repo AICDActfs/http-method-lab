@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AICDA — HTTP Method Vulnerability Lab</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        header img { height: 48px; width: auto; }
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #f0f6fc;
+            flex: 1;
+        }
+        .badge {
+            background: #da3633;
+            color: white;
+            padding: 0.25rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+        }
+        main {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            flex: 1;
+            width: 100%;
+        }
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            color: #58a6ff;
+            margin-bottom: 0.8rem;
+            font-size: 1.15rem;
+        }
+        .card h3 {
+            color: #d29922;
+            margin: 1.2rem 0 0.6rem;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .card p {
+            line-height: 1.7;
+            margin-bottom: 0.7rem;
+            color: #8b949e;
+        }
+        code {
+            background: #0d1117;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.87rem;
+            color: #79c0ff;
+        }
+        pre {
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.82rem;
+            color: #c9d1d9;
+            margin: 0.6rem 0;
+            line-height: 1.5;
+        }
+        table.method-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.8rem;
+            font-size: 0.88rem;
+        }
+        .method-table th, .method-table td {
+            text-align: left;
+            padding: 0.55rem 0.7rem;
+            border-bottom: 1px solid #30363d;
+        }
+        .method-table th {
+            color: #8b949e;
+            font-weight: 600;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .method-table td:first-child {
+            font-family: monospace;
+            font-weight: 700;
+        }
+        .allow { color: #3fb950; }
+        .deny { color: #da3633; }
+        .vuln { color: #d29922; }
+        .m-get      { color: #58a6ff; }
+        .m-post     { color: #3fb950; }
+        .m-put      { color: #d29922; }
+        .m-delete   { color: #f85149; }
+        .m-patch    { color: #bc8cff; }
+        .m-head     { color: #79c0ff; }
+        .m-options  { color: #8b949e; }
+        .m-trace    { color: #ff7b72; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.7rem;
+            margin-top: 0.8rem;
+        }
+        .method-chip {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 0.7rem;
+            text-align: center;
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        .method-chip small {
+            display: block;
+            font-weight: 400;
+            font-size: 0.68rem;
+            color: #8b949e;
+            margin-top: 0.3rem;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: #484f58;
+            font-size: 0.85rem;
+            border-top: 1px solid #21262d;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AICDA Logo">
+        <h1>AICDA Lab — HTTP Method Vulnerabilities</h1>
+        <span class="badge">VULNERABLE</span>
+    </header>
+
+    <main>
+        <div class="card">
+            <h2>🎯 Lab Objective</h2>
+            <p>
+                Master every HTTP method — <code>GET</code>, <code>POST</code>,
+                <code>PUT</code>, <code>DELETE</code>, <code>PATCH</code>,
+                <code>HEAD</code>, <code>OPTIONS</code>, and <code>TRACE</code> —
+                and learn how flawed authorization logic creates bypasses on
+                each of them.
+            </p>
+            <p>Three flags are hidden across three targets. Retrieve all three.</p>
+        </div>
+
+        <div class="card">
+            <h2>📚 The Eight Methods at a Glance</h2>
+            <div class="grid">
+                <div class="method-chip m-get">GET<small>Retrieve</small></div>
+                <div class="method-chip m-post">POST<small>Submit</small></div>
+                <div class="method-chip m-put">PUT<small>Replace</small></div>
+                <div class="method-chip m-delete">DELETE<small>Remove</small></div>
+                <div class="method-chip m-patch">PATCH<small>Modify</small></div>
+                <div class="method-chip m-head">HEAD<small>Headers only</small></div>
+                <div class="method-chip m-options">OPTIONS<small>Capabilities</small></div>
+                <div class="method-chip m-trace">TRACE<small>Echo request</small></div>
+            </div>
+        </div>
+
+        <!-- TARGET 1 -->
+        <div class="card">
+            <h2>Target 1 — <code>/admin/reset</code></h2>
+            <p>
+                The developer protected this endpoint by checking
+                <code>if request.method == "GET"</code> and returning 401.
+                Every other method slides right past.
+            </p>
+            <table class="method-table">
+                <tr><th>Method</th><th>Result</th><th>Why</th></tr>
+                <tr><td class="m-get">GET</td><td class="deny">401 Unauthorized</td><td>Explicitly blocked</td></tr>
+                <tr><td class="m-post">POST</td><td class="vuln">Bypass → Flag</td><td>Not blocked</td></tr>
+                <tr><td class="m-put">PUT</td><td class="vuln">Bypass → Flag</td><td>Not blocked</td></tr>
+                <tr><td class="m-delete">DELETE</td><td class="vuln">Bypass → Flag</td><td>Not blocked</td></tr>
+                <tr><td class="m-patch">PATCH</td><td class="vuln">Bypass → Flag</td><td>Not blocked</td></tr>
+                <tr><td class="m-head">HEAD</td><td class="vuln">Flag in <code>X-Admin-Flag</code> header</td><td>Body stripped, header survives</td></tr>
+                <tr><td class="m-options">OPTIONS</td><td class="vuln">Leaks <code>Allow</code> header</td><td>Recon, not exploit</td></tr>
+            </table>
+        </div>
+
+        <!-- TARGET 2 -->
+        <div class="card">
+            <h2>Target 2 — <code>/file</code></h2>
+            <p>
+                Filter scans <code>request.form</code> only (POST body). Query
+                strings, PUT bodies, PATCH bodies, and DELETE calls are all
+                unfiltered.
+            </p>
+            <table class="method-table">
+                <tr><th>Method</th><th>Input Source</th><th>Filtered?</th></tr>
+                <tr><td class="m-post">POST</td><td><code>request.form</code></td><td class="allow">✔ Yes</td></tr>
+                <tr><td class="m-get">GET</td><td><code>request.args</code></td><td class="deny">✘ No → Flag</td></tr>
+                <tr><td class="m-put">PUT</td><td><code>request.data</code></td><td class="deny">✘ No → Flag</td></tr>
+                <tr><td class="m-patch">PATCH</td><td><code>request.data</code></td><td class="deny">✘ No → Flag</td></tr>
+                <tr><td class="m-delete">DELETE</td><td>n/a</td><td class="deny">✘ No auth → Flag</td></tr>
+                <tr><td class="m-head">HEAD</td><td>n/a</td><td class="deny">✘ Flag in header</td></tr>
+            </table>
+        </div>
+
+        <!-- TARGET 3 -->
+        <div class="card">
+            <h2>Target 3 — <code>/trace</code></h2>
+            <p>
+                TRACE-enabled servers echo the entire request — including
+                <code>Authorization</code> headers, cookies, and proxy routing.
+                This is Cross-Site Tracing (XST) territory.
+            </p>
+            <pre>curl -X TRACE http://127.0.0.1:5000/trace -H "Authorization: Bearer secret"</pre>
+            <p>Response body echoes your header back — the flag is in the body and in <code>X-Trace-Flag</code>.</p>
+        </div>
+
+        <!-- RECON -->
+        <div class="card">
+            <h2>🔍 Recon: Always Start With OPTIONS</h2>
+            <p>Before attacking, enumerate allowed methods on every endpoint:</p>
+            <pre>curl -i -X OPTIONS http://127.0.0.1:5000/admin/reset
+curl -i -X OPTIONS http://127.0.0.1:5000/file
+curl -i -X OPTIONS http://127.0.0.1:5000/trace</pre>
+            <p>Each returns an <code>Allow</code> header listing every reachable method.</p>
+        </div>
+    </main>
+
+    <footer>AICDA — Anonymous India Cyber Defence Academy</footer>
+</body>
+</html>

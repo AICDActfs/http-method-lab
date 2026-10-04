@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICDA — HTTP Methods CTF</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+  header{background:#161b22;border-bottom:1px solid #30363d;padding:1rem 2rem;display:flex;align-items:center;gap:1.5rem;position:sticky;top:0;z-index:10}
+  header img{height:44px;width:auto}
+  header h1{font-size:1.25rem;color:#f0f6fc;flex:1}
+  .badge{padding:.25rem .7rem;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.5px;background:#da3633;color:#fff}
+  .score-header{display:flex;align-items:center;gap:1rem;font-family:monospace;font-size:.85rem}
+  .score-header .count{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:.35rem .8rem;color:#f0f6fc}
+  .score-header .count b{color:#3fb950;font-size:1rem}
+  main{max-width:1300px;margin:2rem auto;padding:0 1.5rem;flex:1;width:100%;display:grid;grid-template-columns:1.2fr 1fr;gap:1.4rem}
+  .full{grid-column:1 / -1}
+  .card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:1.5rem}
+  .card h2{color:#58a6ff;margin-bottom:.8rem;font-size:1.1rem;display:flex;align-items:center;gap:.6rem}
+  .card h3{color:#d29922;margin:1rem 0 .5rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+  p{color:#8b949e;margin-bottom:.55rem;font-size:.9rem}
+  code{background:#0d1117;padding:.15rem .4rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.83rem;color:#79c0ff}
+  pre{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:.9rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#c9d1d9;margin:.5rem 0;line-height:1.55}
+  pre.cmd{border-left:3px solid #58a6ff}
+  .endpoint{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:1rem;margin-bottom:.8rem}
+  .endpoint h4{color:#f0f6fc;font-family:monospace;font-size:.95rem;margin-bottom:.5rem}
+  .endpoint .path{color:#79c0ff}
+  .endpoint .desc{font-size:.85rem;color:#8b949e;margin-bottom:.5rem}
+  .badge-sm{display:inline-block;background:#30363d;color:#8b949e;padding:.1rem .5rem;border-radius:10px;font-size:.68rem;margin-left:.4rem;font-weight:400}
+  footer{text-align:center;padding:1.4rem;color:#484f58;font-size:.82rem;border-top:1px solid #21262d}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .flag-brief{background:#1f6feb15;border:1px solid #1f6feb55;border-radius:8px;padding:1rem;margin:1rem 0;font-family:monospace;font-size:.85rem;color:#79c0ff}
+  .flag-brief b{color:#3fb950}
+  .scoreboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.6rem;margin-top:.6rem}
+  .flag-slot{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:.7rem;font-family:monospace;font-size:.78rem}
+  .flag-slot .label{color:#8b949e;display:block;margin-bottom:.3rem;font-size:.72rem}
+  .flag-slot .value{color:#484f58;font-size:.72rem;word-break:break-all;line-height:1.4}
+  .flag-slot.captured{border-color:#3fb950;background:#3fb95010}
+  .flag-slot.captured .value{color:#3fb950}
+  .flag-slot .checkmark{float:right;color:#3fb950;font-size:.9rem}
+  .submit-row{display:flex;gap:.6rem;margin-top:.6rem}
+  .submit-row input{flex:1;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:.6rem .8rem;border-radius:6px;font-family:monospace;font-size:.85rem}
+  .submit-row input:focus{outline:none;border-color:#58a6ff}
+  .submit-row button{background:#1f6feb;border:none;color:#fff;padding:.6rem 1.2rem;border-radius:6px;font-family:'Segoe UI',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer}
+  .submit-row button:hover{background:#388bfd}
+  .submit-feedback{margin-top:.6rem;padding:.7rem 1rem;border-radius:8px;font-family:monospace;font-size:.83rem;display:none}
+  .submit-feedback.good{display:block;background:#3fb95015;border:1px solid #3fb950;color:#3fb950}
+  .submit-feedback.bad{display:block;background:#f8514915;border:1px solid #f85149;color:#f85149}
+  .hint-btn{background:#d2992222;border:1px solid #d29922;color:#d29922;font-family:'Segoe UI',sans-serif;font-size:.75rem;padding:.3rem .6rem;border-radius:6px;cursor:pointer;margin-top:.5rem}
+  .hint-btn:hover{background:#d2992244}
+  .hint-box{display:none;margin-top:.5rem;padding:.6rem .8rem;background:#d2992215;border-left:3px solid #d29922;border-radius:0 6px 6px 0;font-size:.83rem;color:#d29922}
+  .hint-box.show{display:block}
+  @media (max-width:900px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <img src="/static/images/logo.png" alt="AICDA">
+  <h1>AICDA — HTTP Methods CTF</h1>
+  <div class="score-header">
+    <span class="count">Captured: <b id="score">0</b> / 6</span>
+  </div>
+  <span class="badge">LIVE</span>
+</header>
+
+<main>
+
+<div class="card full">
+  <h2>🎯 Mission Briefing</h2>
+  <p>Six flags are hidden across three endpoints. Every flag is recoverable using the HTTP method techniques you studied in the tutorial lab. <strong>No buttons here — use curl or Burp.</strong></p>
+
+  <div class="flag-brief">
+    <b>Flag format:</b> AICDA{...}<br>
+    <b>Total:</b> 6 flags<br>
+    <b>Tools:</b> curl, Burp Suite, browser dev tools<br>
+    <b>Target host:</b> <span id="host-display">…</span>
+  </div>
+
+  <h3>How to work through this</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>Run the recon commands against each endpoint from a terminal.</li>
+    <li>Read response <em>bodies</em> and response <em>headers</em> — flags hide in both.</li>
+    <li>When you find a string matching <code>AICDA{...}</code>, paste it into the submission form below.</li>
+    <li>Six slots light up as you capture them.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>🗺️ Targets</h2>
+  <p>Three paths. What methods do they accept? Which respond differently?</p>
+
+  <div class="endpoint">
+    <h4><span class="path">/vault</span><span class="badge-sm">3 flags here</span></h4>
+    <p class="desc">A locked vault. Policy denies GET. Everything else reaches the handler — but only some reveal data.</p>
+    <button class="hint-btn" onclick="toggleHint('hint-vault')">💡 Reveal hint</button>
+    <div class="hint-box" id="hint-vault">
+      Try all eight methods. One leaks data in headers when the body is empty (HEAD). One echoes your request back verbatim (TRACE). One write method returns the flag in a header. Check everything with <code>curl -i</code>.
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <h4><span class="path">/vault/backup</span><span class="badge-sm">1 flag here</span></h4>
+    <p class="desc">A backup write path. Endpoint name is not advertised — you have to find it from a hint somewhere else.</p>
+    <button class="hint-btn" onclick="toggleHint('hint-backup')">💡 Reveal hint</button>
+    <div class="hint-box" id="hint-backup">
+      Send OPTIONS to <code>/vault</code>. Read every custom <code>X-*</code> header. One names this path directly. Then PUT with no body.
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <h4><span class="path">/api/secret</span><span class="badge-sm">1 flag here</span></h4>
+    <p class="desc">Blocks DELETE. But some clients lie about their method using a header.</p>
+    <button class="hint-btn" onclick="toggleHint('hint-secret')">💡 Reveal hint</button>
+    <div class="hint-box" id="hint-secret">
+      Send POST to <code>/api/secret</code> with the header <code>X-HTTP-Method-Override: DELETE</code>. The server's filter checks <code>request.method</code>, but the handler respects the override.
+    </div>
+  </div>
+</div>
+
+<div>
+  <div class="card" style="margin-bottom:1.4rem">
+    <h2>🏆 Scoreboard</h2>
+    <p style="font-size:.83rem">Paste any flag you find into the box below.</p>
+    <div class="scoreboard" id="scoreboard">
+      <div class="flag-slot" data-flag="F1"><span class="label">F1 — write method bypass</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F2"><span class="label">F2 — header leak on HEAD</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F3"><span class="label">F3 — OPTIONS recon</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F4"><span class="label">F4 — TRACE echo</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F5"><span class="label">F5 — backup PUT</span><span class="value">not captured</span></div>
+      <div class="flag-slot" data-flag="F6"><span class="label">F6 — override header</span><span class="value">not captured</span></div>
+    </div>
+
+    <h3>Submit a flag</h3>
+    <div class="submit-row">
+      <input id="flag-input" placeholder="AICDA{...}" autocomplete="off" spellcheck="false">
+      <button onclick="submitFlag()">Submit</button>
+    </div>
+    <div class="submit-feedback" id="flag-feedback"></div>
+  </div>
+
+  <div class="card">
+    <h2>🧭 Recon Cheatsheet</h2>
+    <h3>Ask first — OPTIONS</h3>
+    <pre class="cmd">curl -i -X OPTIONS http://<span class="host-here"></span>:5001/vault</pre>
+    <h3>Try every method</h3>
+    <pre class="cmd">for m in GET POST PUT PATCH DELETE HEAD OPTIONS TRACE; do
+  echo "=== $m ==="
+  curl -si -X $m http://<span class="host-here"></span>:5001/vault | head -20
+done</pre>
+    <h3>Read headers on HEAD</h3>
+    <pre class="cmd">curl -I http://<span class="host-here"></span>:5001/vault</pre>
+    <h3>Override the method</h3>
+    <pre class="cmd">curl -i -X POST http://<span class="host-here"></span>:5001/api/secret \
+  -H "X-HTTP-Method-Override: DELETE"</pre>
+    <h3>Burp workflow</h3>
+    <p style="font-size:.83rem">In Repeater, change the first line of a request to test a different method. Use <em>Change request method</em> for quick GET↔POST↔HEAD switching. Check the raw response pane to see headers.</p>
+  </div>
+</div>
+
+<div class="card full">
+  <h2>⚠️ Rules</h2>
+  <div class="two">
+    <div>
+      <p><strong>No UI help.</strong> There are no buttons that fire exploits. You must build every request yourself in curl or Burp.</p>
+      <p><strong>No source code.</strong> The challenge app is running on your instructor's machine. You only interact with its HTTP responses.</p>
+    </div>
+    <div>
+      <p><strong>Hints are one-way.</strong> Clicking Hint reveals the technique — but only after you've tried. Reading the hint without trying defeats the exercise.</p>
+      <p><strong>Flags are in headers, not bodies.</strong> If a body says "check headers," do it. Most flags never appear as visible text in JSON.</p>
+    </div>
+  </div>
+</div>
+
+</main>
+<footer>AICDA — Anonymous India Cyber Defence Academy</footer>
+
+<script>
+// Show current host in the cheatsheet
+const host = window.location.hostname;
+document.getElementById('host-display').textContent = host + ':5001';
+document.querySelectorAll('.host-here').forEach(el => el.textContent = host);
+
+// Scoreboard
+const FLAG_PATTERN = /^AICDA\{[A-Z0-9_]+\}$/;
+
+async function submitFlag() {
+  const input = document.getElementById('flag-input');
+  const fb = document.getElementById('flag-feedback');
+  const val = input.value.trim();
+  fb.className = 'submit-feedback';
+  fb.textContent = '';
+  if (!FLAG_PATTERN.test(val)) {
+    fb.className = 'submit-feedback bad';
+    fb.textContent = 'That does not look like a flag. Format: AICDA{...}';
+    return;
+  }
+  try {
+    const r = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flag: val }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      fb.className = 'submit-feedback good';
+      fb.textContent = '✓ Correct! ' + data.flag_id + ' captured.';
+      markCaptured(data.flag_id, val);
+      input.value = '';
+    } else {
+      fb.className = 'submit-feedback bad';
+      fb.textContent = '✗ Not a valid flag. Keep looking.';
+    }
+  } catch (e) {
+    fb.className = 'submit-feedback bad';
+    fb.textContent = 'Error contacting server: ' + e.message;
+  }
+}
+
+function markCaptured(flagId, val) {
+  const slot = document.querySelector('[data-flag="' + flagId + '"]');
+  if (slot) {
+    slot.classList.add('captured');
+    slot.querySelector('.value').textContent = val;
+    if (!slot.querySelector('.checkmark')) {
+      const cm = document.createElement('span');
+      cm.className = 'checkmark';
+      cm.textContent = '✓';
+      slot.querySelector('.label').appendChild(cm);
+    }
+  }
+  localStorage.setItem('aicda-flag-' + flagId, val);
+  updateScore();
+}
+
+function updateScore() {
+  document.getElementById('score').textContent = document.querySelectorAll('.flag-slot.captured').length;
+}
+
+['F1','F2','F3','F4','F5','F6'].forEach(id => {
+  const v = localStorage.getItem('aicda-flag-' + id);
+  if (v) markCaptured(id, v);
+});
+updateScore();
+
+function toggleHint(id) {
+  document.getElementById(id).classList.toggle('show');
+}
+
+document.getElementById('flag-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitFlag();
+});
+</script>
+</body>
+</html>

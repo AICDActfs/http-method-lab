@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICDA — HTTP Methods Tutorial Workbook</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+  header{background:#161b22;border-bottom:1px solid #30363d;padding:1rem 2rem;display:flex;align-items:center;gap:1.5rem;position:sticky;top:0;z-index:10}
+  header img{height:44px;width:auto}
+  header h1{font-size:1.25rem;color:#f0f6fc;flex:1}
+  .badge{padding:.25rem .7rem;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.5px}
+  .badge.teach{background:#1f6feb;color:#fff}
+  .layout{display:grid;grid-template-columns:260px 1fr;flex:1;max-width:1400px;margin:0 auto;width:100%;gap:2rem;padding:2rem 1.5rem}
+  nav{position:sticky;top:100px;align-self:start;max-height:calc(100vh - 120px);overflow-y:auto}
+  nav h3{font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:#8b949e;margin-bottom:.7rem}
+  nav a{display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;border-radius:6px;color:#8b949e;text-decoration:none;font-size:.85rem;font-family:monospace;transition:background .12s}
+  nav a:hover{background:#161b22;color:#f0f6fc}
+  nav a.done{color:#3fb950}
+  nav a .m{font-weight:700;min-width:56px}
+  nav a .check{margin-left:auto;font-size:.75rem;color:#3fb950;display:none}
+  nav a.done .check{display:inline}
+  main{max-width:900px}
+  .intro{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:1.6rem;margin-bottom:1.5rem}
+  .intro h2{color:#58a6ff;margin-bottom:.7rem;font-size:1.1rem}
+  .intro p{margin-bottom:.6rem;color:#8b949e;font-size:.92rem}
+  .intro code{background:#0d1117;padding:.15rem .4rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:#79c0ff}
+  section.method{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:1.6rem;margin-bottom:1.4rem;scroll-margin-top:100px}
+  section.method h2{font-family:monospace;font-size:1.3rem;margin-bottom:.3rem;display:flex;align-items:center;gap:.7rem}
+  section.method h2 .num{background:#21262d;color:#8b949e;font-size:.75rem;padding:.2rem .55rem;border-radius:12px;font-family:'Segoe UI',sans-serif}
+  section.method .tagline{color:#8b949e;font-size:.92rem;margin-bottom:1.2rem;font-style:italic}
+  section.method h3{color:#d29922;font-size:.8rem;text-transform:uppercase;letter-spacing:.6px;margin:1.2rem 0 .5rem}
+  section.method p{color:#c9d1d9;font-size:.92rem;margin-bottom:.5rem}
+  section.method ul{color:#c9d1d9;font-size:.92rem;margin:.4rem 0 .6rem 1.4rem}
+  section.method li{margin-bottom:.3rem}
+  pre{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:1rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#c9d1d9;margin:.5rem 0;line-height:1.55;position:relative}
+  pre.cmd{border-left:3px solid #58a6ff}
+  pre.out{border-left:3px solid #3fb950;background:#0a0d12}
+  code{background:#0d1117;padding:.15rem .4rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:#79c0ff}
+  .cmd-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem;font-size:.75rem;color:#8b949e;text-transform:uppercase;letter-spacing:.5px}
+  .copy-btn{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:.2rem .55rem;border-radius:4px;font-size:.7rem;cursor:pointer;font-family:'Segoe UI',sans-serif;text-transform:none;letter-spacing:0}
+  .copy-btn:hover{color:#f0f6fc;border-color:#58a6ff}
+  .callout{border-left:3px solid #d29922;background:#d2992210;padding:.7rem 1rem;border-radius:0 6px 6px 0;margin:.8rem 0;font-size:.9rem}
+  .callout.danger{border-color:#f85149;background:#f8514910}
+  .callout.info{border-color:#58a6ff;background:#58a6ff10}
+  .callout strong{color:#f0f6fc}
+  .method-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.6rem;margin-top:1rem}
+  .method-grid button{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:.5rem .7rem;border-radius:6px;font-family:monospace;font-weight:700;font-size:.8rem;cursor:pointer;transition:all .12s}
+  .method-grid button:hover{background:#30363d;border-color:#58a6ff}
+  .method-grid button.fire{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  .method-grid button.fire:hover{background:#388bfd}
+  .inline-out{background:#0a0d12;border:1px solid #21262d;border-radius:8px;padding:.8rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;margin-top:.6rem;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto;color:#8b949e}
+  .inline-out.ok{border-color:#3fb950}
+  .inline-out.err{border-color:#f85149}
+  .check-row{display:flex;align-items:center;gap:.5rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid #21262d;font-size:.85rem;color:#8b949e}
+  .check-row input{width:16px;height:16px;cursor:pointer}
+  .check-row label{cursor:pointer;user-select:none}
+  footer{text-align:center;padding:1.4rem;color:#484f58;font-size:.82rem;border-top:1px solid #21262d;margin-top:2rem}
+  @media (max-width:900px){.layout{grid-template-columns:1fr}nav{position:static;max-height:none}}
+</style>
+</head>
+<body>
+<header>
+  <img src="/static/images/logo.png" alt="AICDA">
+  <h1>AICDA — HTTP Methods Tutorial Workbook</h1>
+  <span class="badge teach">GUIDED</span>
+</header>
+
+<div class="layout">
+
+<nav>
+  <h3>Methods</h3>
+  <a href="#get"     data-key="GET"><span class="m m-get">GET</span>Read<span class="check">✓</span></a>
+  <a href="#post"    data-key="POST"><span class="m m-post">POST</span>Submit<span class="check">✓</span></a>
+  <a href="#put"     data-key="PUT"><span class="m m-put">PUT</span>Replace<span class="check">✓</span></a>
+  <a href="#patch"   data-key="PATCH"><span class="m m-patch">PATCH</span>Modify<span class="check">✓</span></a>
+  <a href="#delete"  data-key="DELETE"><span class="m m-delete">DELETE</span>Remove<span class="check">✓</span></a>
+  <a href="#head"    data-key="HEAD"><span class="m m-head">HEAD</span>Headers<span class="check">✓</span></a>
+  <a href="#options" data-key="OPTIONS"><span class="m m-options">OPTIONS</span>Capabilities<span class="check">✓</span></a>
+  <a href="#trace"   data-key="TRACE"><span class="m m-trace">TRACE</span>Echo<span class="check">✓</span></a>
+</nav>
+
+<main>
+
+<div class="intro">
+  <h2>📘 How to use this workbook</h2>
+  <p>Every section below walks you through <strong>one HTTP method</strong>. For each method you get:</p>
+  <ul>
+    <li>A plain-English explanation of why the method exists</li>
+    <li>A <code>curl</code> command you can copy and run in your terminal</li>
+    <li>The expected output and how to interpret it</li>
+    <li>The Burp Suite equivalent, step by step</li>
+    <li>A "what this teaches" callout</li>
+  </ul>
+  <p>Work through sections in order. Check the box at the bottom of each section when you've completed the exercise. Your progress is saved in the sidebar.</p>
+  <div class="callout info">
+    <strong>Base URL:</strong> replace <code>http://192.168.10.7:5000</code> in the commands below with your instructor's URL. If you're practicing against a public tunnel, use the <code>https://…trycloudflare.com</code> URL from the chat.
+  </div>
+</div>
+
+<!-- ============ GET ============ -->
+<section class="method" id="get">
+  <h2><span class="num">01</span><span class="m-get">GET</span></h2>
+  <p class="tagline">"I want to read something, and I want the result to be safe to repeat."</p>
+
+  <h3>What is it</h3>
+  <p>GET retrieves a representation of the resource at the given URI. It is <strong>safe</strong> (no side effects) and <strong>idempotent</strong> (calling it 10 times produces the same result as calling it once).</p>
+
+  <h3>Why it exists</h3>
+  <p>Every website in the world starts with a GET. Search engines, browsers, and CDNs are built on the assumption that GET does not change anything on the server. That assumption is what makes caching, prefetching, and link-sharing safe.</p>
+
+  <h3>Try it — with curl</h3>
+  <div class="cmd-header"><span>Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+<pre class="cmd">curl -i "http://192.168.10.7:5000/demo/get?name=alice&amp;role=admin"</pre>
+
+  <h3>What you'll see</h3>
+<pre class="out">HTTP/1.1 200 OK
+Server: Werkzeug/3.1.5 Python/3.13.12
+Content-Type: application/json
+
+{
+  "query_params": { "name": "alice", "role": "admin" },
+  "_method_reached": "GET",
+  "_client_ip": "192.168.10.7",
+  "_user_agent": "curl/8.x.x"
+}</pre>
+
+  <h3>What to notice</h3>
+  <ul>
+    <li>The query string is broken out into individual parameters.</li>
+    <li>The server echoes the method it saw — <code>GET</code>.</li>
+    <li>The query parameters are visible in the URL. They show up in server logs, browser history, and the <code>Referer</code> header on any link a user clicks next.</li>
+  </ul>
+
+  <h3>Burp equivalent</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>Open Firefox through Burp (proxy on).</li>
+    <li>Visit <code>http://192.168.10.7:5000/demo/get?name=alice&amp;role=admin</code>.</li>
+    <li>In Burp: <em>Proxy → HTTP History</em>. Find the GET request.</li>
+    <li>Right-click → <em>Send to Repeater</em>. Change the <code>name</code> value and hit Send.</li>
+  </ol>
+
+  <div class="callout danger">
+    <strong>Attack surface:</strong> Never put secrets in a query string. Tokens, session IDs, passwords — all logged by reverse proxies, CDNs, and the browser itself.
+  </div>
+
+  <h3>Try it in the browser</h3>
+  <div class="method-grid">
+    <button onclick="fire('/demo/get?name=alice&role=admin','GET','out-get')">GET /demo/get</button>
+  </div>
+  <div class="inline-out" id="out-get">Click the button to send the request.</div>
+
+  <div class="check-row">
+    <input type="checkbox" id="chk-get" data-key="GET">
+    <label for="chk-get">I've run the curl command and seen the output</label>
+  </div>
+</section>
+
+<!-- ============ POST ============ -->
+<section class="method" id="post">
+  <h2><span class="num">02</span><span class="m-post">POST</span></h2>
+  <p class="tagline">"I want to send data to the server and have it do something."</p>
+
+  <h3>What is it</h3>
+  <p>POST submits data to be processed. It is <strong>not safe</strong> and <strong>not idempotent</strong> — submitting the same form twice may create two records.</p>
+
+  <h3>Why it exists</h3>
+  <p>GET puts everything in the URL. That's fine for a search query, terrible for a 10 MB file upload or a password. POST moves the data into the request body, separate from the URL.</p>
+
+  <h3>Try it — with curl</h3>
+  <div class="cmd-header"><span>Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+<pre class="cmd">curl -i -X POST http://192.168.10.7:5000/demo/post \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "name=alice&amp;role=admin"</pre>
+
+  <h3>What you'll see</h3>
+<pre class="out">HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "form_data": { "name": "alice", "role": "admin" },
+  "json_body": null,
+  "raw_body": "name=alice&amp;role=admin",
+  "content_type": "application/x-www-form-urlencoded",
+  "_method_reached": "POST",
+  "_client_ip": "192.168.10.7"
+}</pre>
+
+  <h3>What to notice</h3>
+  <ul>
+    <li>The data is in the <strong>body</strong>, not the URL.</li>
+    <li><code>Content-Type</code> tells the server how to parse it. Change it to <code>application/json</code> and the server parses JSON instead.</li>
+    <li>Body content does <em>not</em> appear in server access logs by default — safer for secrets, but still visible in the browser's dev tools and any proxy in between.</li>
+  </ul>
+
+  <h3>Burp equivalent</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>Send the curl request above, then find it in <em>Proxy → HTTP History</em>.</li>
+    <li>Right-click → <em>Send to Repeater</em>.</li>
+    <li>In the Repeater request pane, edit the body below the blank line and resend.</li>
+  </ol>
+
+  <div class="callout">
+    <strong>Note:</strong> Many frameworks only apply CSRF protection to POST. Methods like PUT and DELETE often slip past that protection — the basis of the challenge lab.
+  </div>
+
+  <h3>Try it in the browser</h3>
+  <div class="method-grid">
+    <button onclick="fire('/demo/post','POST','out-post')">POST /demo/post</button>
+  </div>
+  <div class="inline-out" id="out-post">Click the button to send the request.</div>
+
+  <div class="check-row">
+    <input type="checkbox" id="chk-post" data-key="POST">
+    <label for="chk-post">I've run the curl command and seen the output</label>
+  </div>
+</section>
+
+<!-- ============ PUT ============ -->
+<section class="method" id="put">
+  <h2><span class="num">03</span><span class="m-put">PUT</span></h2>
+  <p class="tagline">"I want to replace the entire resource at this URI."</p>
+
+  <h3>What is it</h3>
+  <p>PUT replaces the resource wholesale. Idempotent — sending the same PUT twice leaves the resource in the same final state.</p>
+
+  <h3>Why it exists</h3>
+  <p>REST needed a "full replace" verb distinct from "partial update." PUT is what you'd use when uploading a file to a known URL: whatever was there before is gone, replaced by what you sent.</p>
+
+  <h3>Try it — with curl</h3>
+  <div class="cmd-header"><span>Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+<pre class="cmd">curl -i -X PUT http://192.168.10.7:5000/demo/put \
+  -H "Content-Type: application/json" \
+  -d '{"name":"alice","role":"admin","balance":9999}'</pre>
+
+  <h3>What you'll see</h3>
+<pre class="out">HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "raw_body": "{\"name\":\"alice\",\"role\":\"admin\",\"balance\":9999}",
+  "note": "PUT semantically means REPLACE the whole resource.",
+  "_method_reached": "PUT"
+}</pre>
+
+  <h3>What to notice</h3>
+  <ul>
+    <li>The server received your JSON body intact — no form parsing.</li>
+    <li>PUT assumes the client is authorized to overwrite this URI. If the auth check is missing, an attacker can overwrite other users' data.</li>
+  </ul>
+
+  <h3>Burp equivalent</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>In HTTP History, find the PUT request.</li>
+    <li>Send to Repeater. Change the body — for example, set <code>"role":"user"</code> to <code>"role":"admin"</code> and resend.</li>
+    <li>Watch how the server accepts anything you send. That's the vulnerability in the wild.</li>
+  </ol>
+
+  <div class="callout danger">
+    <strong>Attack surface:</strong> Missing authorization on PUT = arbitrary data overwrite. This is the classic "horizontal privilege escalation" bug.
+  </div>
+
+  <h3>Try it in the browser</h3>
+  <div class="method-grid">
+    <button onclick="fire('/demo/put','PUT','out-put')">PUT /demo/put</button>
+  </div>
+  <div class="inline-out" id="out-put">Click the button to send the request.</div>
+
+  <div class="check-row">
+    <input type="checkbox" id="chk-put" data-key="PUT">
+    <label for="chk-put">I've run the curl command and seen the output</label>
+  </div>
+</section>
+
+<!-- ============ PATCH ============ -->
+<section class="method" id="patch">
+  <h2><span class="num">04</span><span class="m-patch">PATCH</span></h2>
+  <p class="tagline">"I want to change one field, not the whole object."</p>
+
+  <h3>What is it</h3>
+  <p>PATCH applies partial modifications. Not necessarily idempotent — depends on the patch format (JSON Merge Patch, JSON Patch, etc.).</p>
+
+  <h3>Why it exists</h3>
+  <p>Sending an entire user record just to change a phone number wastes bandwidth. PATCH was standardized in RFC 5789 (2010) so clients could send only the diff.</p>
+
+  <h3>Try it — with curl</h3>
+  <div class="cmd-header"><span>Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+<pre class="cmd">curl -i -X PATCH http://192.168.10.7:5000/demo/patch \
+  -H "Content-Type: application/json" \
+  -d '{"role":"admin"}'</pre>
+
+  <h3>What you'll see</h3>
+<pre class="out">HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "raw_body": "{\"role\":\"admin\"}",
+  "note": "PATCH semantically means apply a PARTIAL update.",
+  "_method_reached": "PATCH"
+}</pre>
+
+  <h3>What to notice</h3>
+  <ul>
+    <li>You sent one field. A well-behaved PATCH handler would only touch that field.</li>
+    <li>A badly behaved handler that blindly merges the input into the user object will <strong>set your role to admin</strong> — even though the legitimate client only sends <code>{"email":"..."}</code>.</li>
+  </ul>
+
+  <h3>Burp equivalent</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>Intercept a normal profile-update request in your own test app.</li>
+    <li>Send it to Repeater. Add <code>"role":"admin"</code> to the JSON body.</li>
+    <li>Send. If the server accepts it, you've just exploited a mass-assignment vulnerability.</li>
+  </ol>
+
+  <div class="callout danger">
+    <strong>Attack surface:</strong> Mass assignment. PATCH endpoints are the #1 place this shows up because developers treat the body as a "partial update" and merge everything without a whitelist.
+  </div>
+
+  <h3>Try it in the browser</h3>
+  <div class="method-grid">
+    <button onclick="fire('/demo/patch','PATCH','out-patch')">PATCH /demo/patch</button>
+  </div>
+  <div class="inline-out" id="out-patch">Click the button to send the request.</div>
+
+  <div class="check-row">
+    <input type="checkbox" id="chk-patch" data-key="PATCH">
+    <label for="chk-patch">I've run the curl command and seen the output</label>
+  </div>
+</section>
+
+<!-- ============ DELETE ============ -->
+<section class="method" id="delete">
+  <h2><span class="num">05</span><span class="m-delete">DELETE</span></h2>
+  <p class="tagline">"I want to remove the resource."</p>
+
+  <h3>What is it</h3>
+  <p>DELETE removes the resource at the given URI. Idempotent — deleting something that's already gone should return the same success response, not an error.</p>
+
+  <h3>Why it exists</h3>
+  <p>REST needed a removal verb that doesn't require a body. DELETE maps naturally to database deletes, file removals, and token revocation.</p>
+
+  <h3>Try it — with curl</h3>
+  <div class="cmd-header"><span>Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+<pre class="cmd">curl -i -X DELETE "http://192.168.10.7:5000/demo/delete?id=42"</pre>
+
+  <h3>What you'll see</h3>
+<pre class="out">HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "note": "DELETE removed a resource (simulated).",
+  "would_delete_id": "42",
+  "_method_reached": "DELETE"
+}</pre>
+
+  <h3>What to notice</h3>
+  <ul>
+    <li>No body needed — the target resource is identified entirely by the URL.</li>
+    <li>Many CSRF frameworks only check POST. If DELETE uses cookie-based auth with no CSRF token, a malicious page can trigger deletes on a victim's behalf.</li>
+  </ul>
+
+  <h3>Burp equivalent</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>In Repeater, change the method of a POST request to DELETE and remove the body.</li>
+    <li>Send. Observe whether the endpoint still performs the action.</li>
+    <li>Try sending DELETE without a CSRF token — that's what an attacker would do.</li>
+  </ol>
+
+  <div class="callout danger">
+    <strong>Attack surface:</strong> CSRF via non-POST methods. Modern frameworks like Django and Laravel now enforce CSRF on all state-changing methods, but plenty of custom code doesn't.
+  </div>
+
+  <h3>Try it in the browser</h3>
+  <div class="method-grid">
+    <button onclick="fire('/demo/delete?id=42','DELETE','out-delete')">DELETE /demo/delete</button>
+  </div>
+  <div class="inline-out" id="out-delete">Click the button to send the request.</div>
+
+  <div class="check-row">
+    <input type="checkbox" id="chk-delete" data-key="DELETE">
+    <label for="chk-delete">I've run the curl command and seen the output</label>
+  </div>
+</section>
+
+<!-- ============ HEAD ============ -->
+<section class="method" id="head">
+  <h2><span class="num">06</span><span class="m-head">HEAD</span></h2>
+  <p class="tagline">"Give me the same response as GET, but skip the body."</p>
+
+  <h3>What is it</h3>
+  <p>HEAD is GET without the response body. The status line and headers are identical to what GET would return.</p>
+
+  <h3>Why it exists</h3>
+  <p>A download manager wants to know the file size before it starts the download. A link checker wants to know if a page exists without transferring the HTML. HEAD is the efficient answer to both.</p>
+
+  <h3>Try it — with curl</h3>
+  <div class="cmd-header"><span>Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+<pre class="cmd">curl -I http://192.168.10.7:5000/demo/head</pre>
+
+  <h3>What you'll see</h3>
+<pre class="out">HTTP/1.1 200 OK
+Server: Werkzeug/3.1.5 Python/3.13.12
+X-Method-Reached: HEAD
+X-This-Would-Be-Body: If this were GET, this would be the body content
+X-Auth-Check-Note: Handlers that only block GET miss this entirely
+Content-Type: text/html; charset=utf-8
+Content-Length: 0</pre>
+
+  <h3>What to notice</h3>
+  <ul>
+    <li>No body, but the headers are real.</li>
+    <li>Your custom <code>X-*</code> headers survive — that's how you exfiltrate data from HEAD in the challenge lab.</li>
+    <li>Any server-side logic in the GET handler still ran. If it checks admin status after the method check, HEAD bypasses it.</li>
+  </ul>
+
+  <h3>Burp equivalent</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>Send the HEAD request with curl, then look in HTTP History.</li>
+    <li>Click the entry. The response pane shows headers only — no body.</li>
+    <li>Right-click the request → <em>Change request method</em> → Burp lets you switch between GET, POST, HEAD, and others.</li>
+  </ol>
+
+  <div class="callout danger">
+    <strong>Attack surface:</strong> Method-based authorization bypass. The single most common bypass is a developer writing <code>if method == "GET": require_auth()</code>. HEAD sails past.
+  </div>
+
+  <h3>Try it in the browser</h3>
+  <div class="method-grid">
+    <button onclick="fire('/demo/head','HEAD','out-head')">HEAD /demo/head</button>
+  </div>
+  <div class="inline-out" id="out-head">Click the button to send the request.</div>
+
+  <div class="check-row">
+    <input type="checkbox" id="chk-head" data-key="HEAD">
+    <label for="chk-head">I've run the curl command and seen the output</label>
+  </div>
+</section>
+
+<!-- ============ OPTIONS ============ -->
+<section class="method" id="options">
+  <h2><span class="num">07</span><span class="m-options">OPTIONS</span></h2>
+  <p class="tagline">"What can I do to this resource?"</p>
+
+  <h3>What is it</h3>
+  <p>OPTIONS returns the methods the server supports for the given resource, usually in an <code>Allow</code> header.</p>
+
+  <h3>Why it exists</h3>
+  <p>Before a browser sends a cross-origin PUT with a custom header, it asks the server "would you accept this?" via an OPTIONS request. That's CORS preflight. OPTIONS is how the browser learns the rules.</p>
+
+  <h3>Try it — with curl</h3>
+  <div class="cmd-header"><span>Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+<pre class="cmd">curl -i -X OPTIONS http://192.168.10.7:5000/demo/options</pre>
+
+  <h3>What you'll see</h3>
+<pre class="out">HTTP/1.1 204 NO CONTENT
+Allow: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+Content-Length: 0</pre>
+
+  <h3>What to notice</h3>
+  <ul>
+    <li>The <code>Allow</code> header is the full inventory of methods this endpoint accepts.</li>
+    <li>Reconnaissance. Before you send a single exploit, you now know the entire attack surface.</li>
+    <li>If <code>TRACE</code> shows up in that list, you have a finding on any production server.</li>
+  </ul>
+
+  <h3>Burp equivalent</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>Send to Repeater. Change the method line to <code>OPTIONS /endpoint HTTP/1.1</code>.</li>
+    <li>Send. Read the response headers.</li>
+    <li>Intruder tip: place § around the method and fire all eight methods against the same URL to map the endpoint.</li>
+  </ol>
+
+  <div class="callout info">
+    <strong>Methodology:</strong> Always OPTIONS first. It's free, it's fast, and it maps your attack surface before you waste time guessing.
+  </div>
+
+  <h3>Try it in the browser</h3>
+  <div class="method-grid">
+    <button onclick="fire('/demo/options','OPTIONS','out-options')">OPTIONS /demo/options</button>
+  </div>
+  <div class="inline-out" id="out-options">Click the button to send the request.</div>
+
+  <div class="check-row">
+    <input type="checkbox" id="chk-options" data-key="OPTIONS">
+    <label for="chk-options">I've run the curl command and seen the output</label>
+  </div>
+</section>
+
+<!-- ============ TRACE ============ -->
+<section class="method" id="trace">
+  <h2><span class="num">08</span><span class="m-trace">TRACE</span></h2>
+  <p class="tagline">"Echo my request back to me — headers and all."</p>
+
+  <h3>What is it</h3>
+  <p>TRACE returns the exact request the server received, as the response body. It's a debugging tool for proxy chains.</p>
+
+  <h3>Why it exists</h3>
+  <p>Historically useful when debugging what a proxy did to a request — did it add a <code>Via</code> header? Strip <code>Authorization</code>? Rewrite <code>Host</code>? TRACE showed you. Modern servers disable it because it's not worth the risk.</p>
+
+  <h3>Try it — with curl</h3>
+  <div class="cmd-header"><span>Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+<pre class="cmd">curl -i -X TRACE http://192.168.10.7:5000/demo/trace \
+  -H "Authorization: Bearer super-secret-token" \
+  -H "X-Custom: hello-from-curl"</pre>
+
+  <h3>What you'll see</h3>
+<pre class="out">HTTP/1.1 200 OK
+Content-Type: message/http
+
+TRACE /demo/trace HTTP/1.1
+Host: 192.168.10.7:5000
+User-Agent: curl/8.x.x
+Accept: */*
+Authorization: Bearer super-secret-token
+X-Custom: hello-from-curl</pre>
+
+  <h3>What to notice</h3>
+  <ul>
+    <li>The entire request is echoed back — including the <code>Authorization</code> header you sent.</li>
+    <li>If an attacker has any way to make the browser issue a TRACE (XSS via <code>fetch</code>), they can read back HttpOnly cookies and auth headers.</li>
+    <li>This is Cross-Site Tracing (XST), documented since 2003.</li>
+  </ul>
+
+  <h3>Burp equivalent</h3>
+  <ol style="color:#c9d1d9;font-size:.9rem;margin:.4rem 0 .6rem 1.4rem">
+    <li>In Repeater, change the method to <code>TRACE</code>.</li>
+    <li>Add an <code>Authorization</code> header with a fake value.</li>
+    <li>Send. The response body is the request you just sent — headers included.</li>
+  </ol>
+
+  <div class="callout danger">
+    <strong>Attack surface:</strong> Cross-Site Tracing (XST). Disable TRACE at the server or framework level. Flask, Express, nginx, and Apache all support disabling it.
+  </div>
+
+  <h3>Try it in the browser</h3>
+  <div class="method-grid">
+    <button onclick="fire('/demo/trace','TRACE','out-trace')">TRACE /demo/trace</button>
+  </div>
+  <div class="inline-out" id="out-trace">Click the button to send the request.</div>
+
+  <div class="check-row">
+    <input type="checkbox" id="chk-trace" data-key="TRACE">
+    <label for="chk-trace">I've run the curl command and seen the output</label>
+  </div>
+</section>
+
+<div class="intro" style="margin-top:2rem">
+  <h2>🎓 You've reached the end of the tutorial</h2>
+  <p>You now know what every HTTP method does, how to send it with curl, how to see it in Burp, and what goes wrong when developers misunderstand it.</p>
+  <p>Next stop: the <strong>Challenge Lab</strong>. Same methods, no hand-holding, six flags to find. The link is <code>http://192.168.10.7:5001</code> or the public tunnel URL from your instructor.</p>
+</div>
+
+</main>
+</div>
+
+<footer>AICDA — Anonymous India Cyber Defence Academy</footer>
+
+<script>
+// ---- checkboxes persist in localStorage ----
+const boxes = document.querySelectorAll('input[type=checkbox][data-key]');
+const navLinks = document.querySelectorAll('nav a[data-key]');
+
+function syncNav() {
+  navLinks.forEach(a => {
+    const k = a.dataset.key;
+    const cb = document.querySelector('input[data-key="' + k + '"]');
+    if (cb && cb.checked) a.classList.add('done');
+    else a.classList.remove('done');
+  });
+}
+
+boxes.forEach(cb => {
+  const saved = localStorage.getItem('aicda-tut-' + cb.dataset.key);
+  if (saved === '1') cb.checked = true;
+  cb.addEventListener('change', () => {
+    localStorage.setItem('aicda-tut-' + cb.dataset.key, cb.checked ? '1' : '0');
+    syncNav();
+  });
+});
+syncNav();
+
+// ---- copy buttons ----
+function copyCmd(btn) {
+  const pre = btn.closest('.cmd-header').nextElementSibling;
+  const text = pre.textContent.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => btn.textContent = orig, 1200);
+  });
+}
+
+// ---- fire() sends one deliberate request, no polling ----
+async function fire(path, method, outId) {
+  const out = document.getElementById(outId);
+  if (out) { out.textContent = 'Sending ' + method + ' ' + path + '…'; out.className = 'inline-out'; }
+  try {
+    const r = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: ['POST','PUT','PATCH'].includes(method) ? '{}' : undefined,
+    });
+    const text = await r.text();
+    const headers = {};
+    r.headers.forEach((v,k) => headers[k] = v);
+    if (out) {
+      out.textContent = JSON.stringify({
+        status: r.status,
+        statusText: r.statusText,
+        response_headers: headers,
+        body: tryJson(text),
+      }, null, 2);
+      out.className = 'inline-out ' + (r.ok ? 'ok' : 'err');
+    }
+  } catch (e) {
+    if (out) { out.textContent = 'Error: ' + e.message; out.className = 'inline-out err'; }
+  }
+}
+
+function tryJson(t) { try { return JSON.parse(t); } catch { return t; } }
+</script>
+</body>
+</html>

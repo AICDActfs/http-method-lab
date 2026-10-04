@@ -1,0 +1,186 @@
+from flask import Flask, request, render_template, make_response, jsonify
+from collections import deque
+from datetime import datetime
+
+app = Flask(__name__)
+
+FLAGS = {
+    "F1": "AICDA{POST_BYPASSES_GET_ONLY_AUTH}",
+    "F2": "AICDA{HEAD_LEAKS_VIA_HEADER}",
+    "F3": "AICDA{OPTIONS_REVEALS_HIDDEN_ENDPOINT}",
+    "F4": "AICDA{TRACE_ECHOES_AUTH_HEADER}",
+    "F5": "AICDA{PUT_WRITES_WITHOUT_AUTH}",
+    "F6": "AICDA{OVERRIDE_HEADER_BYPASSES_METHOD_FILTER}",
+}
+
+# In-memory request log — visible to students on the UI
+REQUEST_LOG = deque(maxlen=50)
+
+
+def log_request(note=""):
+    REQUEST_LOG.appendleft({
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "method": request.method,
+        "path": request.path,
+        "query": request.query_string.decode(),
+        "headers": {k: v for k, v in request.headers.items()
+                    if k.lower() not in ("host", "user-agent", "accept",
+                                         "accept-language", "accept-encoding",
+                                         "connection", "referer")},
+        "body": request.get_data(as_text=True)[:500],
+        "note": note,
+    })
+
+
+# ---------------------------------------------------------------
+# /vault
+# ---------------------------------------------------------------
+@app.route("/vault", methods=["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS","TRACE"])
+def vault():
+    log_request()
+    m = request.method
+
+    if m == "GET":
+        return _json({"error":"vault locked","hint":"GET is denied by policy"}, 401)
+
+    if m == "OPTIONS":
+        r = make_response("", 204)
+        r.headers["Allow"] = "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, TRACE"
+        r.headers["X-Vault-Note"] = "There is a second endpoint. Guess its name."
+        return r
+
+    if m == "HEAD":
+        r = make_response("", 200)
+        r.headers["X-Flag"] = FLAGS["F2"]
+        return r
+
+    if m == "TRACE":
+        body = [f"TRACE {request.path} HTTP/1.1"]
+        for k, v in request.headers.items():
+            body.append(f"{k}: {v}")
+        body.append("")
+        body.append(f"# Flag for echoing auth: {FLAGS['F4']}")
+        r = make_response("\n".join(body), 200)
+        r.headers["Content-Type"] = "message/http"
+        return r
+
+    if m in ("POST", "PUT", "PATCH", "DELETE"):
+        return _json({
+            "status": "vault opened",
+            "method": m,
+            "flag": FLAGS["F1"],
+            "lesson": "Only GET was blocked. All write methods bypassed.",
+        })
+
+
+# ---------------------------------------------------------------
+# /vault/backup
+# ---------------------------------------------------------------
+@app.route("/vault/backup", methods=["PUT","PATCH","DELETE","OPTIONS","HEAD","GET"])
+def vault_backup():
+    log_request()
+    m = request.method
+
+    if m == "GET":
+        return _json({"error":"use PUT to write a backup"}, 405)
+
+    if m == "OPTIONS":
+        r = make_response("", 204)
+        r.headers["Allow"] = "PUT, PATCH, DELETE, OPTIONS, HEAD"
+        return r
+
+    if m == "HEAD":
+        r = make_response("", 200)
+        r.headers["X-Backup-Mode"] = "writable"
+        return r
+
+    if m in ("PUT", "PATCH"):
+        return _json({
+            "status": "backup written",
+            "method": m,
+            "flag": FLAGS["F5"],
+            "lesson": "No auth at all on the backup write path.",
+        })
+
+    if m == "DELETE":
+        return _json({"status":"backup purged","flag":FLAGS["F5"]})
+
+
+# ---------------------------------------------------------------
+# /api/secret
+# ---------------------------------------------------------------
+@app.route("/api/secret", methods=["GET","POST","DELETE","PUT","OPTIONS"])
+def api_secret():
+    log_request()
+    override = request.headers.get("X-HTTP-Method-Override", "").upper()
+    effective = override if override else request.method
+
+    if effective == "DELETE" and not override:
+        return _json({"error":"DELETE is blocked on this endpoint"}, 403)
+
+    if request.method == "OPTIONS":
+        r = make_response("", 204)
+        r.headers["Allow"] = "GET, POST, DELETE, PUT, OPTIONS"
+        return r
+
+    if request.method == "GET":
+        return _json({"message":"try harder","methods_seen":["GET"]})
+
+    if override:
+        return _json({
+            "status": "override honored",
+            "effective_method": override,
+            "actual_method": request.method,
+            "flag": FLAGS["F6"],
+            "lesson": "Filter checked request.method, not the override header.",
+        })
+
+    return _json({"status":"received","method":request.method})
+
+
+# ---------------------------------------------------------------
+# UI + helpers
+# ---------------------------------------------------------------
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/hints")
+def hints():
+    return _json({
+        "challenge_1": "Only one method string is blocked. Everything else works. Try all eight.",
+        "challenge_2": "The first challenge leaks the name of a second endpoint in an unusual place.",
+        "challenge_3": "Some servers let clients override the method with a header. Which one?",
+    })
+
+
+@app.route("/api/log")
+def api_log():
+    """Read-only. UI polls this to show students their own traffic."""
+    return jsonify(list(REQUEST_LOG))
+
+
+@app.route("/api/attack", methods=["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS"])
+def api_attack():
+    """
+    Proxy endpoint used by the in-browser console. The browser can't
+    send arbitrary methods to cross-origin URLs, so the JS sends a
+    fetch() with method=X to this same-origin endpoint, and the
+    endpoint tells the UI which method was attempted. This is also
+    exactly what Burp will see when the student presses the button.
+    """
+    log_request(note="console")
+    return _json({
+        "method_seen": request.method,
+        "path": request.args.get("path", ""),
+        "note": "This endpoint logs the method for the UI. The real attack should go directly to the target endpoint in Burp.",
+    })
+
+
+def _json(obj, status=200):
+    return make_response(jsonify(obj), status)
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5001, debug=False)
