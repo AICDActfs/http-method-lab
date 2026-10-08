@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template, make_response, jsonify
 from collections import deque
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 
@@ -40,7 +41,9 @@ def _client_is_browser():
 
 
 # =====================================================================
-# /vault — F1 (write method bypass), F2 (HEAD header), F4 (TRACE)
+# /vault — F1 (write method bypass), F2 (HEAD header),
+#          F3 (OPTIONS recon), F4 (also on DELETE — TRACE is blocked
+#          by Cloudflare at the edge on the public deployment)
 # =====================================================================
 @app.route("/vault", methods=["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS","TRACE"])
 def vault():
@@ -51,10 +54,11 @@ def vault():
         return _json({"error": "vault locked", "hint": "GET is denied by policy"}, 401)
 
     if m == "OPTIONS":
-        # Recon: leaks the second endpoint name. No flag here.
+        # F3: recon flag returned in header, plus hint about the second endpoint.
         r = make_response("", 204)
         r.headers["Allow"] = "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, TRACE"
         r.headers["X-Vault-Note"] = "There is a second endpoint at /vault/backup"
+        r.headers["X-Flag"] = FLAGS["F3"]
         return r
 
     if m == "HEAD":
@@ -65,7 +69,10 @@ def vault():
         return r
 
     if m == "TRACE":
-        # F4: TRACE echoes the request. Flag appears in the echo body.
+        # F4 in the traditional form: TRACE echoes the request back.
+        # Note: this works on localhost, but Cloudflare strips TRACE at the
+        # edge on the public deployment. F4 is therefore ALSO returned on
+        # DELETE below, so students can capture it through the tunnel URL.
         body = [f"TRACE {request.path} HTTP/1.1"]
         for k, v in request.headers.items():
             body.append(f"{k}: {v}")
@@ -77,8 +84,6 @@ def vault():
 
     if m in ("POST", "PUT", "PATCH", "DELETE"):
         # F1: write methods bypass the GET-only check.
-        # The flag is placed in a response header.
-        # The body is a decoy for browsers — real students use curl or Burp.
         r = _json({
             "status": "vault opened",
             "method": m,
@@ -86,6 +91,9 @@ def vault():
                     else "Flag is in the X-Flag response header.",
         })
         r.headers["X-Flag"] = FLAGS["F1"]
+        # F4 alternate delivery — only on DELETE.
+        if m == "DELETE":
+            r.headers["X-Flag-Secondary"] = FLAGS["F4"]
         return r
 
 
@@ -144,7 +152,6 @@ def api_secret():
 
     if override:
         # F6: override header bypasses the DELETE filter.
-        # Flag in header, not body.
         r = _json({
             "status": "override honored",
             "effective_method": override,
@@ -171,15 +178,15 @@ def hints():
     return _json({
         "F1": "Only one method string is blocked on /vault. Everything else reaches the handler.",
         "F2": "The response body of HEAD is empty. The flag lives in a response header.",
-        "F3": "Send OPTIONS to /vault. One of the custom X-* headers names another endpoint.",
-        "F4": "TRACE echoes your request back. Send one with an Authorization header.",
-        "F5": "The endpoint you found with F3 accepts PUT. No auth.",
+        "F3": "Send OPTIONS to /vault. One of the custom X-* headers carries the flag, another names the second endpoint.",
+        "F4": "TRACE echoes your request back — but Cloudflare blocks it at the edge. Try DELETE on /vault instead; a second header appears.",
+        "F5": "The endpoint you found via F3 accepts PUT. No auth.",
         "F6": "Try X-HTTP-Method-Override: DELETE on a POST to /api/secret.",
         "methodology": [
             "OPTIONS every endpoint first.",
             "Then try every method with the same path.",
             "Always check response headers with curl -i or -I.",
-            "For F6, remember override headers exist.",
+            "For F4, remember that CDNs strip TRACE — DELETE carries the flag instead.",
         ],
     })
 
@@ -202,8 +209,6 @@ def api_submit():
         })
     return jsonify({"ok": False})
 
-
-import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5001))
