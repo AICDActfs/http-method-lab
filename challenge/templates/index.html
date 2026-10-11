@@ -142,16 +142,16 @@
   <div class="card">
     <h2>🧭 Recon Cheatsheet</h2>
     <h3>Ask first — OPTIONS</h3>
-    <pre class="cmd">curl -i -X OPTIONS http://<span class="host-here"></span>:5001/vault</pre>
+    <pre class="cmd">curl -i -X OPTIONS https://<span class="host-here"></span>/vault</pre>
     <h3>Try every method</h3>
     <pre class="cmd">for m in GET POST PUT PATCH DELETE HEAD OPTIONS TRACE; do
   echo "=== $m ==="
-  curl -si -X $m http://<span class="host-here"></span>:5001/vault | head -20
+  curl -si -X $m https://<span class="host-here"></span>/vault | head -20
 done</pre>
     <h3>Read headers on HEAD</h3>
-    <pre class="cmd">curl -I http://<span class="host-here"></span>:5001/vault</pre>
+    <pre class="cmd">curl -I https://<span class="host-here"></span>/vault</pre>
     <h3>Override the method</h3>
-    <pre class="cmd">curl -i -X POST http://<span class="host-here"></span>:5001/api/secret \
+    <pre class="cmd">curl -i -X POST https://<span class="host-here"></span>/api/secret \
   -H "X-HTTP-Method-Override: DELETE"</pre>
     <h3>Burp workflow</h3>
     <p style="font-size:.83rem">In Repeater, change the first line of a request to test a different method. Use <em>Change request method</em> for quick GET↔POST↔HEAD switching. Check the raw response pane to see headers.</p>
@@ -178,7 +178,7 @@ done</pre>
 <script>
 // Show current host in the cheatsheet
 const host = window.location.hostname;
-document.getElementById('host-display').textContent = host + ':5001';
+document.getElementById('host-display').textContent = host;
 document.querySelectorAll('.host-here').forEach(el => el.textContent = host);
 
 // Scoreboard
